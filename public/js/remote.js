@@ -3,6 +3,7 @@
 import * as bus from './bus.js';
 import { getType, loadTypes } from './engine/registry.js';
 import { buildCtx, activeContests } from './engine/ctx.js';
+import { voteInputs } from './engine/participation.js';
 import { esc, owners, isTeamMode, ownerAvatar, pointsOf } from './util.js';
 import { mountSprite, icon } from './icons.js';
 import { mountArtSprite } from './art.js';
@@ -55,10 +56,24 @@ function guestAvatar(g) {
   return `<span class="av" style="--c:${esc(g.color || 'var(--ink)')}">${inner}</span>`;
 }
 
-// Ключ ставок текущего вопроса — по нему сервер хранит числа семей.
-function betKeyNow() {
-  const ctx = ctxNow();
-  return ctx.contest && ctx.item ? ctx.contest.id + '/' + ctx.item.id : '';
+// Каждый ответ прилетает обратно с сервера и перерисовывает пульт. Если в этот
+// момент ведущий печатает число, поле подменяется под пальцами и цифры
+// теряются. Поэтому поле, в котором сейчас работают, оставляем как есть.
+function setNowBody(html) {
+  const body = $('nowBody');
+  if (body.innerHTML === html) return;
+
+  const active = document.activeElement;
+  const editing = active && active.dataset && active.dataset.vote ? active.dataset.vote : null;
+  const typed = editing ? active.value : null;
+
+  body.innerHTML = html;
+  if (!editing) return;
+
+  const again = body.querySelector(`[data-vote="${editing}"]`);
+  if (!again) return;
+  again.value = typed;
+  again.focus();
 }
 
 function render() {
@@ -82,18 +97,17 @@ function render() {
     s.classList.toggle('is-on', showPhases && s.dataset.phase === r.phase);
   });
 
-  const body = $('nowBody');
   if (r.screen !== 'show') {
-    body.innerHTML = `<div class="r-note">На телевизоре: <b>${esc(SCREEN_NAMES[r.screen] || r.screen)}</b>.
-      Жми «Дальше», чтобы двигаться по программе.</div>`;
+    setNowBody(`<div class="r-note">На телевизоре: <b>${esc(SCREEN_NAMES[r.screen] || r.screen)}</b>.
+      Жми «Дальше», чтобы двигаться по программе.</div>`);
   } else if (!ctx.contest) {
-    body.innerHTML = '<div class="r-note">Нет включённых конкурсов — включи их в кабинете.</div>';
+    setNowBody('<div class="r-note">Нет включённых конкурсов — включи их в кабинете.</div>');
   } else if (r.phase === 'intro' || !ctx.item) {
-    body.innerHTML = `<div class="r-question">${esc(ctx.contest.title)}</div>
+    setNowBody(`<div class="r-question">${esc(ctx.contest.title)}</div>
       <div class="r-note">${esc(ctx.contest.rules || '')}</div>
-      <div class="r-note">Показываем афишу. «Дальше» — первый вопрос.</div>`;
+      <div class="r-note">Показываем афишу. «Дальше» — первый вопрос.</div>`);
   } else {
-    body.innerHTML = ctx.type.remote(ctx);
+    setNowBody(ctx.type.remote(ctx) + voteInputs(ctx));
   }
 
   $('btnReveal').innerHTML = r.phase === 'reveal'
@@ -235,22 +249,24 @@ function wire() {
       return;
     }
 
-    const clear = e.target.closest('[data-bets="clear"]');
-    if (clear) { bus.send('clearBets', { key: betKeyNow() }); toast('Ставки стёрты'); return; }
-
-    const win = e.target.closest('[data-award-win]');
-    if (win) {
+    const round = e.target.closest('[data-round]');
+    if (round) {
       buzz();
-      bus.send('award', { id: win.dataset.awardWin, delta: 1 });
-      toast('Балл ближайшему!');
+      if (round.dataset.round === 'reset') {
+        bus.send('resetRound');
+        toast('Вопрос переигран');
+      } else {
+        bus.send('clearVotes');
+        toast('Ответы стёрты');
+      }
     }
   });
 
-  // Ставки набираются прямо на пульте и сразу видны на телевизоре.
+  // Ответы набираются прямо на пульте и сразу видны на телевизоре.
   document.body.addEventListener('input', (e) => {
-    const field = e.target.closest('[data-bet]');
+    const field = e.target.closest('[data-vote]');
     if (!field) return;
-    bus.send('bet', { key: betKeyNow(), ownerId: field.dataset.bet, value: field.value });
+    bus.send('vote', { ownerId: field.dataset.vote, value: field.value });
   });
 
   $('addGuest').addEventListener('click', () => {

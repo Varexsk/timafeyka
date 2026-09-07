@@ -275,7 +275,9 @@ const runtime = {
   fx: { type: '', seq: 0 },
   music: { on: false, seq: 0 },
   video: { action: 'pause', seq: 0, at: 0 },
-  bets: {},
+  // Ответы участников по вопросам. Держим только последние — см. KEEP_ROUNDS.
+  rounds: {},
+  roundOrder: [],
   lastAward: null,
   // Последние начисления — чтобы ведущий мог отменить промах одним касанием.
   awardLog: []

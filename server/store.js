@@ -41,7 +41,7 @@ const store = {
     // Старые данные (эмодзи вместо картинок, отсутствие семей) переводим на новые поля.
     if (!Array.isArray(this.guests.teams)) this.guests.teams = clone(seed.guests.teams);
     if (!this.show.mode) this.show.mode = 'teams';
-    if (!this.runtime.bets) this.runtime.bets = {};
+
     migrate.migrateGuests(this.guests.list);
     migrate.migrateShow(this.show);
     migrate.migrateRuntime(this.runtime, this.show);

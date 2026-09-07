@@ -14,6 +14,9 @@ export default {
     { k: 'text', f: 'answerNote', label: 'Приписка к ответу (необязательно)' }
   ],
 
+  // Балл за фант ставит ведущий — правильного ответа тут нет.
+  scoring: { rule: 'manual' },
+
   newItem() {
     return { id: '', q: 'Новое задание', answerNote: '' };
   },

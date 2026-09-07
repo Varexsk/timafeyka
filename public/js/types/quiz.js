@@ -18,6 +18,9 @@ export default {
       placeholder: 'Например: «Ровно в обед!»' }
   ],
 
+  scoring: { rule: 'exact', field: 'answer' },
+  participation: { vote: { kind: 'choice', from: 'options' } },
+
   newItem() {
     return { id: '', q: 'Новый вопрос', options: [], answer: null, answerText: '', answerNote: '', media: '' };
   },

@@ -1,6 +1,7 @@
 'use strict';
 
 const { store, clone } = require('./store');
+const types = require('./types');
 
 // Двенадцать зверей-артистов из public/js/avatars.js — раздаются гостям по кругу.
 const AVATARS = ['elephant', 'bear', 'panda', 'fox', 'tiger', 'zebra',
@@ -147,6 +148,103 @@ function ensurePosition(fromIndexInShow) {
   r.screen = screen;
 }
 
+// ——— раунды ———
+//
+// Раунд — это один вопрос одного конкурса: кто что ответил и начислены ли
+// за него баллы. Раньше такое хранилище было только у «Ставок» (runtime.bets),
+// жило отдельной командой и никогда не чистилось.
+
+function roundKey(contest, item) {
+  return contest && item ? contest.id + '/' + item.id : '';
+}
+
+function currentItem() {
+  const contest = currentContest();
+  if (!contest) return null;
+  return itemsOf(contest).find((it) => it.id === store.runtime.itemId) || null;
+}
+
+// Держим последние шесть раундов: текущий и пять предыдущих — их хватает,
+// чтобы отменить начисление и вернуться на пару вопросов назад.
+const KEEP_ROUNDS = 6;
+
+function roundAt(key, create) {
+  const r = store.runtime;
+  if (!r.rounds) r.rounds = {};
+  if (!Array.isArray(r.roundOrder)) r.roundOrder = [];
+  if (!key) return null;
+  if (!r.rounds[key]) {
+    if (!create) return null;
+    r.rounds[key] = { votes: {}, awarded: false, gen: 0 };
+  }
+  const at = r.roundOrder.indexOf(key);
+  if (at >= 0) r.roundOrder.splice(at, 1);
+  r.roundOrder.push(key);
+  while (r.roundOrder.length > KEEP_ROUNDS) {
+    delete r.rounds[r.roundOrder.shift()];
+  }
+  return r.rounds[key];
+}
+
+// Кто выиграл раунд — решает правило, которое объявил сам формат.
+function pickWinners(scoring, item, round) {
+  const votes = (round && round.votes) || {};
+  const ids = Object.keys(votes);
+  if (!ids.length) return [];
+
+  if (scoring.rule === 'exact') {
+    const right = item[scoring.field || 'answer'];
+    if (!Number.isInteger(right)) return [];
+    return ids.filter((id) => Number(votes[id].v) === right);
+  }
+
+  if (scoring.rule === 'nearest') {
+    const target = Number(item[scoring.field || 'value']);
+    if (!isFinite(target) || item[scoring.field || 'value'] === null) return [];
+    let best = Infinity;
+    let out = [];
+    for (const id of ids) {
+      const v = Number(votes[id].v);
+      if (!isFinite(v)) continue;
+      const diff = Math.abs(v - target);
+      if (diff < best - 1e-9) { best = diff; out = [id]; }
+      else if (Math.abs(diff - best) < 1e-9) out.push(id);
+    }
+    return scoring.tie === 'first' ? out.slice(0, 1) : out;
+  }
+
+  return [];
+}
+
+function pointsFor(contest) {
+  const base = Number(contest && contest.pointsPerCorrect);
+  const mult = Number(contest && contest.multiplier);
+  return Math.max(0, (base > 0 ? base : 1) * (mult > 0 ? mult : 1));
+}
+
+// Раскрыли ответ — раздаём баллы. Ровно один раз на раунд: повторное
+// «показать/скрыть» ничего не удвоит.
+function settleRound() {
+  const r = store.runtime;
+  if (r.screen !== 'show' || r.phase !== 'reveal') return [];
+  const contest = currentContest();
+  const item = currentItem();
+  if (!contest || !item) return [];
+
+  const round = roundAt(roundKey(contest, item), false);
+  if (!round || round.awarded) return [];
+
+  const decl = types.get(contest.type);
+  const scoring = (decl && decl.scoring) || { rule: 'manual' };
+  if (scoring.rule === 'manual') return [];
+
+  const winners = pickWinners(scoring, item, round);
+  round.awarded = true;
+  if (!winners.length) return [];
+  const delta = pointsFor(contest);
+  return applyAward(winners.map((id) => ({ id, delta })), contest.title);
+}
+
 // ——— баллы ———
 
 // Единственное место, где меняется счёт. Пишем в журнал ровно те дельты,
@@ -189,7 +287,7 @@ function revertAward(entry) {
 // ——— команды ———
 
 const handlers = {
-  next() { next(); return ['runtime']; },
+  next() { next(); return ['runtime'].concat(settleRound()); },
   prev() { prev(); return ['runtime']; },
 
   goScreen({ screen }) {
@@ -222,7 +320,7 @@ const handlers = {
     const r = store.runtime;
     if (r.screen !== 'show' || r.phase === 'intro') return [];
     r.phase = on === false ? 'question' : 'reveal';
-    return ['runtime'];
+    return ['runtime'].concat(settleRound());
   },
 
   fx({ type }) {
@@ -323,21 +421,33 @@ const handlers = {
     return ['guests'];
   },
 
-  // Ставки: у каждой семьи своё число на текущем вопросе.
-  bet({ key, ownerId, value }) {
-    const r = store.runtime;
-    if (!r.bets) r.bets = {};
-    const k = String(key || '');
-    if (!k || !ownerId) return [];
-    if (!r.bets[k]) r.bets[k] = {};
-    if (value === '' || value === null || value === undefined) delete r.bets[k][ownerId];
-    else r.bets[k][ownerId] = Number(value);
+  // Ответ участника на текущем вопросе. В режиме «только пульт» его вводит
+  // ведущий, потом сюда же будут приходить ответы с телефонов гостей.
+  vote({ ownerId, value }) {
+    const contest = currentContest();
+    const item = currentItem();
+    if (!contest || !item || !ownerId) return [];
+    const round = roundAt(roundKey(contest, item), true);
+
+    if (value === '' || value === null || value === undefined) delete round.votes[ownerId];
+    else round.votes[ownerId] = { v: Number.isNaN(Number(value)) ? value : Number(value), at: Date.now() };
     return ['runtime'];
   },
 
-  clearBets({ key }) {
-    const r = store.runtime;
-    if (r.bets) delete r.bets[String(key || '')];
+  clearVotes() {
+    const round = roundAt(roundKey(currentContest(), currentItem()), false);
+    if (!round) return [];
+    round.votes = {};
+    return ['runtime'];
+  },
+
+  // Переиграть вопрос: ответы стираются, баллы за него можно начислить заново.
+  resetRound() {
+    const round = roundAt(roundKey(currentContest(), currentItem()), true);
+    if (!round) return [];
+    round.votes = {};
+    round.awarded = false;
+    round.gen = (round.gen || 0) + 1;
     return ['runtime'];
   },
 

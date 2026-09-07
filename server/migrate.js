@@ -86,6 +86,26 @@ function migrateRuntime(runtime, show) {
     toIds(runtime.rehearsal);
     changed = true;
   }
+  // Ставки жили отдельным хранилищем и никогда не чистились. Переносим их
+  // в общие раунды: ключ тот же — «конкурс/вопрос».
+  if (runtime.bets && typeof runtime.bets === 'object') {
+    runtime.rounds = runtime.rounds || {};
+    runtime.roundOrder = Array.isArray(runtime.roundOrder) ? runtime.roundOrder : [];
+    for (const key of Object.keys(runtime.bets)) {
+      const votes = {};
+      for (const ownerId of Object.keys(runtime.bets[key] || {})) {
+        votes[ownerId] = { v: Number(runtime.bets[key][ownerId]), at: 0 };
+      }
+      if (!Object.keys(votes).length) continue;
+      runtime.rounds[key] = { votes, awarded: false, gen: 0 };
+      if (!runtime.roundOrder.includes(key)) runtime.roundOrder.push(key);
+    }
+    delete runtime.bets;
+    changed = true;
+  }
+  if (!runtime.rounds) { runtime.rounds = {}; changed = true; }
+  if (!Array.isArray(runtime.roundOrder)) { runtime.roundOrder = []; changed = true; }
+
   // Последнее начисление раньше было одиночным: {id, delta}. Теперь их может
   // быть несколько сразу (например, при ничьей), поэтому это список.
   const last = runtime.lastAward;

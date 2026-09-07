@@ -16,6 +16,9 @@ export default {
     { k: 'text', f: 'answerNote', label: 'Приписка к ответу (необязательно)' }
   ],
 
+  scoring: { rule: 'exact', field: 'answer' },
+  participation: { vote: { kind: 'choice', from: 'options' } },
+
   newItem() {
     return { id: '', q: 'Новая цитата', options: [], answer: null, answerText: '', answerNote: '' };
   },

@@ -203,8 +203,10 @@ function paintScene(r, ctx) {
       paintKey = 'mount|' + ctx.contest.id + '|' + r.itemId + '|' + r.phase;
       type.mount(el.screen, ctx);
     } else {
-      const betsKey = ctx.contest.type === 'bets' ? JSON.stringify(r.bets || {}) : '';
-      paint(['q', ctx.contest.id, r.itemId, r.phase, JSON.stringify(ctx.item), betsKey].join('|'), type.stage(ctx));
+      // Пришёл новый ответ — сцену надо перерисовать. Раньше здесь было имя
+      // формата «ставки»: только он умел показывать ответы участников.
+      const answers = JSON.stringify((ctx.round && ctx.round.votes) || null);
+      paint(['q', ctx.contest.id, r.itemId, r.phase, JSON.stringify(ctx.item), answers].join('|'), type.stage(ctx));
     }
   }
 }

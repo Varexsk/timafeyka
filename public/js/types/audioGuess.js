@@ -18,6 +18,9 @@ export default {
     { k: 'text', f: 'answerNote', label: 'Приписка к ответу (необязательно)' }
   ],
 
+  scoring: { rule: 'exact', field: 'answer' },
+  participation: { vote: { kind: 'choice', from: 'options' } },
+
   newItem() {
     return { id: '', q: 'Что за песенка?', audio: '', options: [], answer: null, answerText: '', answerNote: '' };
   },
