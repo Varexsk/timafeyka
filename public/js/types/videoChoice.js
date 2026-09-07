@@ -1,4 +1,5 @@
 import { optionsHtml, counterHtml, noteHtml, esc, correctText } from '../util.js';
+import { needAnswer } from '../engine/fields.js';
 import { icon } from '../icons.js';
 
 // Короткое имя именинника — из настроек праздника, а не из кода.
@@ -20,7 +21,23 @@ export default {
   icon: 'clapper',
   order: 30,
   prop: { intro: 'mic', question: '', reveal: 'star' },
-  editor: { options: true, contestVideo: true, marks: true },
+  // Видео у конкурса одно на все вопросы — поэтому поле уровня конкурса.
+  newContest() {
+    return { video: '' };
+  },
+
+  fields: [
+    { k: 'media', f: 'video', kind: 'video', label: 'Видео конкурса',
+      required: 'не выбрано видео конкурса' }
+  ],
+
+  itemFields: [
+    { k: 'textarea', f: 'q', label: 'Вопрос', rows: 2 },
+    { k: 'options', f: 'options', check: needAnswer },
+    { k: 'videoMarks', atField: 'at', endField: 'revealEnd',
+      check: (it) => (Number(it.at) > 0 ? null : 'не проставлена метка паузы') },
+    { k: 'text', f: 'answerNote', label: 'Приписка к ответу (необязательно)' }
+  ],
 
   newItem(n) {
     return {

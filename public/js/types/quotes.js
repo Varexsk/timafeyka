@@ -1,4 +1,5 @@
 import { optionsHtml, answerHtml, noteHtml, counterHtml, esc, correctText } from '../util.js';
+import { needAnswer, noOptions } from '../engine/fields.js';
 
 export default {
   id: 'quotes',
@@ -7,7 +8,13 @@ export default {
   icon: 'quote',
   order: 50,
   prop: { intro: 'mic', question: 'ticket', reveal: 'ticket' },
-  editor: { options: true, openAnswer: true, guestOptions: true },
+  itemFields: [
+    { k: 'textarea', f: 'q', label: 'Вопрос', rows: 2 },
+    { k: 'options', f: 'options', guestFill: true, check: needAnswer },
+    { k: 'text', f: 'answerText', when: noOptions,
+      label: 'Правильный ответ — покажется крупно на экране' },
+    { k: 'text', f: 'answerNote', label: 'Приписка к ответу (необязательно)' }
+  ],
 
   newItem() {
     return { id: '', q: 'Новая цитата', options: [], answer: null, answerText: '', answerNote: '' };

@@ -1,4 +1,5 @@
 import { optionsHtml, mediaHtml, answerHtml, noteHtml, counterHtml, esc, correctText } from '../util.js';
+import { needAnswer, noOptions } from '../engine/fields.js';
 
 export default {
   id: 'photoGuess',
@@ -7,7 +8,14 @@ export default {
   icon: 'photo',
   order: 40,
   prop: { intro: 'mic', question: '', reveal: 'star' },
-  editor: { options: true, media: 'photo', openAnswer: true, guestOptions: true },
+  itemFields: [
+    { k: 'textarea', f: 'q', label: 'Вопрос', rows: 2 },
+    { k: 'options', f: 'options', guestFill: true, check: needAnswer },
+    { k: 'text', f: 'answerText', when: noOptions,
+      label: 'Правильный ответ — покажется крупно на экране' },
+    { k: 'media', f: 'media', kind: 'photo', label: 'Фото', required: 'нет фото' },
+    { k: 'text', f: 'answerNote', label: 'Приписка к ответу (необязательно)' }
+  ],
 
   newItem() {
     return { id: '', q: 'Кто это?', media: '', options: [], answer: null, answerText: '', answerNote: '' };

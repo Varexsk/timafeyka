@@ -1,4 +1,5 @@
 import { optionsHtml, noteHtml, counterHtml, questionClass, esc } from '../util.js';
+import { needAnswer } from '../engine/fields.js';
 
 const OPTIONS = [
   { text: 'Правда', icon: 'yes' },
@@ -12,7 +13,12 @@ export default {
   icon: 'balance',
   order: 60,
   prop: { intro: 'mic', question: '', reveal: 'star' },
-  editor: { options: false, trueFalse: true },
+  itemFields: [
+    { k: 'textarea', f: 'q', label: 'Вопрос', rows: 2 },
+    { k: 'choice', f: 'answer', label: 'Это правда или ложь?',
+      values: [{ v: 0, label: 'Правда' }, { v: 1, label: 'Ложь' }], check: needAnswer },
+    { k: 'text', f: 'answerNote', label: 'Приписка к ответу (необязательно)' }
+  ],
 
   newItem() {
     return { id: '', q: 'Новое утверждение', answer: null, answerNote: '' };

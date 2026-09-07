@@ -8,7 +8,11 @@ export default {
   icon: 'hat',
   order: 80,
   prop: { intro: 'mic', question: 'whistle', reveal: 'whistle' },
-  editor: { options: false, noAnswer: true },
+  itemNoun: 'задание',
+  itemFields: [
+    { k: 'textarea', f: 'q', label: 'Задание', rows: 2 },
+    { k: 'text', f: 'answerNote', label: 'Приписка к ответу (необязательно)' }
+  ],
 
   newItem() {
     return { id: '', q: 'Новое задание', answerNote: '' };

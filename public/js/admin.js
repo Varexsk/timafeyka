@@ -3,6 +3,7 @@
 import * as bus from './bus.js';
 import { types, getType, loadTypes } from './engine/registry.js';
 import { esc, names } from './util.js';
+import { renderFields, applyInput, applyClick, problems, needsRerender } from './engine/fields.js';
 import { mountSprite, icon } from './icons.js';
 import { mountArtSprite, art, hasArt, ART_NAMES, ART_LABELS } from './art.js';
 import { mountAvatarSprite, avatar, hasAvatar, AVATAR_IDS, AVATAR_LABELS } from './avatars.js';
@@ -44,29 +45,17 @@ function saveNow() {
 
 function itemProblems(contest, item, i) {
   const type = getType(contest.type);
-  const ed = type.editor || {};
-  const out = [];
-  if (ed.numberAnswer) {
-    const empty = item.value === null || item.value === undefined || item.value === '';
-    if (empty) out.push('не заполнено правильное число');
-  } else if (!ed.noAnswer) {
-    const hasOption = Number.isInteger(item.answer);
-    const hasText = !!(item.answerText || '').trim();
-    if (!hasOption && !hasText) out.push('не отмечен правильный ответ');
-  }
-  if (ed.media === 'photo' && type.id === 'photoGuess' && !item.media) out.push('нет фото');
-  if (ed.media === 'audio' && !item.audio) out.push('нет аудио');
-  if (ed.marks && !(Number(item.at) > 0)) out.push('не проставлена метка паузы');
-  return out.map((what) => ({ contestId: contest.id, title: contest.title, index: i, what }));
+  return problems(type.itemFields, item, contest, state)
+    .map((what) => ({ contestId: contest.id, title: contest.title, index: i, what }));
 }
 
 function allProblems() {
   const out = [];
   for (const c of (state.show.contests || [])) {
     if (c.enabled === false) continue;
-    const type = getType(c.type);
-    if ((type.editor || {}).contestVideo && !c.video) {
-      out.push({ contestId: c.id, title: c.title, index: -1, what: 'не выбрано видео конкурса' });
+    // Сначала претензии к самому конкурсу, потом к каждому его вопросу.
+    for (const what of problems(getType(c.type).fields, c, c, state)) {
+      out.push({ contestId: c.id, title: c.title, index: -1, what });
     }
     (c.items || []).forEach((item, i) => out.push(...itemProblems(c, item, i)));
   }
@@ -84,8 +73,7 @@ function countItems() {
 
 function contestReady(c) {
   if (c.enabled === false) return true;
-  const type = getType(c.type);
-  if ((type.editor || {}).contestVideo && !c.video) return false;
+  if (problems(getType(c.type).fields, c, c, state).length) return false;
   return (c.items || []).every((item, i) => itemProblems(c, item, i).length === 0);
 }
 
@@ -160,102 +148,28 @@ function selectContest(id, openIndex) {
 
 // ——— редактор ———
 
-function mediaOptions(kind, current) {
-  const files = media.filter((f) => f.kind === kind);
-  return '<option value="">— не выбрано —</option>' + files.map((f) =>
-    `<option value="${esc(f.path)}" ${f.path === current ? 'selected' : ''}>${esc(f.name)}</option>`).join('');
-}
-
-function iconSlot(o, i, oi) {
-  const inner = o.icon && hasArt(o.icon)
-    ? art(o.icon)
-    : (o.emoji ? `<span>${esc(o.emoji)}</span>` : '<span class="empty">нет</span>');
-  return `<button class="icon-slot" data-act="pickIcon" data-i="${i}" data-o="${oi}" title="Выбрать картинку">${inner}</button>`;
-}
-
-function optionRows(item, i, type) {
-  const opts = item.options || [];
-  return `
-    <div class="muted" style="margin:.5rem 0 .3rem">Варианты ответа — отметь правильный</div>
-    ${opts.map((o, oi) => `
-      <div class="opt-row">
-        <button class="opt-mark ${item.answer === oi ? 'is-on' : ''}" data-act="mark" data-i="${i}" data-o="${oi}"
-                title="Это правильный ответ">${icon('check')}</button>
-        ${iconSlot(o, i, oi)}
-        <input data-f="optText" data-i="${i}" data-o="${oi}" value="${esc(o.text || '')}" placeholder="Текст варианта">
-        <button class="a-btn a-btn--sm" data-act="delOpt" data-i="${i}" data-o="${oi}" title="Убрать">${icon('cross')}</button>
-      </div>`).join('')}
-    <div style="display:flex;gap:.4rem;margin-top:.35rem;flex-wrap:wrap">
-      <button class="a-btn a-btn--sm" data-act="addOpt" data-i="${i}">${icon('plus')} вариант</button>
-      ${type.editor.guestOptions ? `<button class="a-btn a-btn--sm" data-act="fillGuests" data-i="${i}">Подставить гостей</button>` : ''}
-      ${opts.length ? `<button class="a-btn a-btn--sm" data-act="clearOpts" data-i="${i}">Сделать открытым вопросом</button>` : ''}
-    </div>`;
+// Всё, что нужно движку полей: где взять данные и как отозваться на кнопки.
+function fieldApi() {
+  return {
+    state,
+    contest: draft,
+    media,
+    openPicker,
+    rerender: renderEditor,
+    save: saveNow,
+    videoTime: () => { const v = $('vidPrev'); return v ? v.currentTime : null; },
+    videoSeek: (t) => {
+      const v = $('vidPrev');
+      if (!v) return;
+      v.currentTime = t;
+      v.play().catch(() => {});
+    }
+  };
 }
 
 function itemBody(item, i, type) {
-  const ed = type.editor || {};
-  const opts = item.options || [];
   return `
-    <div class="field">
-      <label>${ed.noAnswer ? 'Задание' : 'Вопрос'}</label>
-      <textarea rows="2" data-f="q" data-i="${i}">${esc(item.q || '')}</textarea>
-    </div>
-
-    ${ed.trueFalse ? `
-      <div class="field">
-        <label>Это правда или ложь?</label>
-        <div style="display:flex;gap:.4rem">
-          <button class="a-btn ${item.answer === 0 ? 'a-btn--primary' : ''}" data-act="tf" data-i="${i}" data-v="0">Правда</button>
-          <button class="a-btn ${item.answer === 1 ? 'a-btn--primary' : ''}" data-act="tf" data-i="${i}" data-v="1">Ложь</button>
-        </div>
-      </div>` : ''}
-
-    ${ed.numberAnswer ? `
-      <div class="field-row">
-        <div class="field"><label>Правильное число</label>
-          <input type="number" step="any" data-f="value" value="${item.value === null || item.value === undefined ? '' : esc(item.value)}"
-                 data-i="${i}" placeholder="например 3250"></div>
-        <div class="field" style="flex:0 0 8rem"><label>Единицы</label>
-          <input data-f="unit" data-i="${i}" value="${esc(item.unit || '')}" placeholder="г, см, шт"></div>
-      </div>` : ''}
-
-    ${ed.options ? optionRows(item, i, type) : ''}
-
-    ${ed.openAnswer && !opts.length ? `
-      <div class="field" style="margin-top:.6rem">
-        <label>Правильный ответ — покажется крупно на экране</label>
-        <input data-f="answerText" data-i="${i}" value="${esc(item.answerText || '')}" placeholder="Например: «Мама»">
-      </div>` : ''}
-
-    ${ed.media === 'photo' ? `
-      <div class="field">
-        <label>Фото</label>
-        <select data-f="media" data-i="${i}">${mediaOptions('photo', item.media)}</select>
-        ${item.media ? `<img class="media-preview" src="${esc(item.media)}" alt="">` : ''}
-      </div>` : ''}
-
-    ${ed.media === 'audio' ? `
-      <div class="field">
-        <label>Аудио</label>
-        <select data-f="audio" data-i="${i}">${mediaOptions('audio', item.audio)}</select>
-        ${item.audio ? `<audio controls src="${esc(item.audio)}" style="width:100%;margin-top:.4rem"></audio>` : ''}
-      </div>` : ''}
-
-    ${ed.marks ? `
-      <div class="marks-row">
-        <div class="field"><label>Пауза на секунде</label>
-          <input type="number" step="0.1" style="width:7rem" data-f="at" data-i="${i}" value="${Number(item.at) || 0}"></div>
-        <button class="a-btn a-btn--sm" data-act="grabAt" data-i="${i}">${icon('clock')} с плеера</button>
-        <div class="field"><label>Доиграть до</label>
-          <input type="number" step="0.1" style="width:7rem" data-f="revealEnd" data-i="${i}" value="${Number(item.revealEnd) || 0}"></div>
-        <button class="a-btn a-btn--sm" data-act="grabEnd" data-i="${i}">${icon('clock')} с плеера</button>
-        <button class="a-btn a-btn--sm" data-act="seek" data-i="${i}">${icon('play')} проверить</button>
-      </div>` : ''}
-
-    <div class="field" style="margin-top:.6rem">
-      <label>Приписка к ответу (необязательно)</label>
-      <input data-f="answerNote" data-i="${i}" value="${esc(item.answerNote || '')}" placeholder="Например: «Ровно в обед!»">
-    </div>
+    ${renderFields(type.itemFields, item, i, fieldApi())}
 
     <div class="q-tools" style="justify-content:flex-end">
       <button class="a-btn a-btn--sm" data-act="moveItem" data-i="${i}" data-dir="-1">${icon('chevron-up')}</button>
@@ -287,7 +201,6 @@ function renderEditor() {
     return;
   }
   const type = getType(draft.type);
-  const ed = type.editor || {};
   $('editorTitle').textContent = `${type.label} · ${(draft.items || []).length} шт.`;
   box.innerHTML = `
     <div class="field-row">
@@ -303,20 +216,12 @@ function renderEditor() {
     <div class="field"><label>Что скажет ${esc(names(state).lion)} на афише</label>
       <input data-f="lionLine" value="${esc(draft.lionLine || '')}"></div>
 
-    ${ed.contestVideo ? `
-      <div class="field">
-        <label>Видео конкурса</label>
-        <select data-f="video">${mediaOptions('video', draft.video)}</select>
-        ${draft.video
-          ? `<video class="vid-preview" id="vidPrev" src="${esc(draft.video)}" controls preload="metadata" style="margin-top:.4rem"></video>
-             <div class="muted" style="margin-top:.3rem">Поставь видео на нужном моменте и жми «с плеера» у вопроса.</div>`
-          : '<div class="muted" style="margin-top:.3rem">Загрузи видео ниже — потом выбери его здесь.</div>'}
-      </div>` : ''}
+    ${renderFields(type.fields, draft, undefined, fieldApi())}
 
     <div class="section-title">Вопросы</div>
     <div id="itemsBox">${(draft.items || []).map((it, i) => itemCard(it, i, type)).join('')}</div>
     <button class="a-btn a-btn--primary a-btn--wide" data-act="addItem" style="margin-top:.5rem">
-      ${icon('plus')} Добавить ${ed.noAnswer ? 'задание' : 'вопрос'}
+      ${icon('plus')} Добавить ${type.itemNoun || 'вопрос'}
     </button>
   `;
 }
@@ -443,35 +348,46 @@ function closePicker() {
 
 function currentItem(i) { return draft.items[Number(i)]; }
 
+// Шапка вопроса — текст и значок «готово». Обновляем её на лету, пока ведущий
+// печатает: перерисовывать всё поле нельзя, иначе прыгает курсор.
+function refreshItemHead(i) {
+  if (i === undefined) return;
+  const head = document.querySelector(`.q-item[data-i="${i}"] .q-head`);
+  const item = currentItem(i);
+  if (!head || !item) return;
+  const text = head.querySelector('.q-text');
+  if (text) text.textContent = item.q || 'Без текста';
+  const badge = head.querySelector('.q-badge');
+  if (!badge) return;
+  const list = itemProblems(draft, item, Number(i));
+  badge.textContent = list.length ? list[0].what : 'готово';
+  badge.classList.toggle('is-warn', list.length > 0);
+  badge.classList.toggle('is-ok', list.length === 0);
+}
+
 $('editor').addEventListener('input', (e) => {
   const t = e.target;
-  const f = t.dataset.f;
-  if (!f || !draft) return;
-  const i = t.dataset.i;
-  const o = t.dataset.o;
+  if (!draft) return;
 
-  if (i === undefined) {
+  // Поля, которые есть у любого конкурса, кабинет держит у себя.
+  if (!t.dataset.fk) {
+    const f = t.dataset.f;
+    if (!f) return;
     draft[f] = f === 'pointsPerCorrect' ? Number(t.value) : t.value;
-    if (f === 'video') renderEditor();
     scheduleSave();
     if (f === 'title') renderList();
     return;
   }
-  const item = currentItem(i);
-  if (!item) return;
-  if (o !== undefined) {
-    item.options = item.options || [];
-    const opt = item.options[Number(o)] || (item.options[Number(o)] = { text: '', icon: '' });
-    if (f === 'optText') opt.text = t.value;
-  } else if (f === 'at' || f === 'revealEnd') {
-    item[f] = Number(t.value) || 0;
-  } else if (f === 'value') {
-    item.value = t.value === '' ? null : Number(t.value);
-  } else {
-    item[f] = t.value;
-    if (f === 'media' || f === 'audio') renderEditor();
-  }
+
+  // Остальное — поля формата: у вопроса есть data-i, у конкурса нет.
+  const i = t.dataset.i;
+  const type = getType(draft.type);
+  const list = i === undefined ? type.fields : type.itemFields;
+  const target = i === undefined ? draft : currentItem(i);
+  if (!target || !applyInput(list, t, target)) return;
   scheduleSave();
+  if (needsRerender(list, t)) renderEditor();
+  else refreshItemHead(i);
   renderReady();
 });
 
@@ -480,79 +396,52 @@ $('editor').addEventListener('click', (e) => {
   if (!btn || !draft) return;
   const act = btn.dataset.act;
   const i = btn.dataset.i;
-  const item = i === undefined ? null : currentItem(i);
   const type = getType(draft.type);
-  const vid = $('vidPrev');
 
+  // Кнопки самого кабинета: раскрыть, добавить, удалить, переставить вопрос.
   if (act === 'toggleItem') {
     const idx = Number(i);
     if (openItems.has(idx)) openItems.delete(idx); else openItems.add(idx);
     renderEditor();
     return;
   }
-  if (act === 'pickIcon' && item) {
-    const oi = Number(btn.dataset.o);
-    openPicker('art', (value) => {
-      item.options[oi].icon = value;
-      delete item.options[oi].emoji;
-      renderEditor();
-      saveNow();
-    });
-    return;
-  }
-  if (act === 'seek' && item && vid) {
-    vid.currentTime = Number(item.at) || 0;
-    vid.play().catch(() => {});
-    return;
-  }
-
-  if (act === 'mark' && item) {
-    const o = Number(btn.dataset.o);
-    item.answer = item.answer === o ? null : o;
-  } else if (act === 'tf' && item) {
-    const v = Number(btn.dataset.v);
-    item.answer = item.answer === v ? null : v;
-  } else if (act === 'addOpt' && item) {
-    item.options = item.options || [];
-    item.options.push({ text: '', icon: '' });
-  } else if (act === 'delOpt' && item) {
-    const o = Number(btn.dataset.o);
-    item.options.splice(o, 1);
-    if (item.answer === o) item.answer = null;
-    else if (Number.isInteger(item.answer) && item.answer > o) item.answer -= 1;
-  } else if (act === 'clearOpts' && item) {
-    item.options = [];
-    item.answer = null;
-  } else if (act === 'fillGuests' && item) {
-    item.options = state.guests.map((g) => ({ text: g.name, icon: '' }));
-    item.answer = null;
-  } else if (act === 'addItem') {
+  if (act === 'addItem') {
     const fresh = type.newItem ? type.newItem(names(state)) : { id: '', q: 'Новый вопрос' };
     fresh.id = 'i-' + Math.random().toString(36).slice(2, 8);
     draft.items.push(fresh);
     openItems.add(draft.items.length - 1);
-  } else if (act === 'delItem' && item) {
+    return done();
+  }
+  if (act === 'delItem') {
     draft.items.splice(Number(i), 1);
     openItems.delete(Number(i));
-  } else if (act === 'moveItem') {
+    return done();
+  }
+  if (act === 'moveItem') {
     const from = Number(i);
     const to = from + Number(btn.dataset.dir);
     if (to < 0 || to >= draft.items.length) return;
     const [it] = draft.items.splice(from, 1);
     draft.items.splice(to, 0, it);
     openItems = new Set([to]);
-  } else if (act === 'grabAt' && item && vid) {
-    item.at = Math.round(vid.currentTime * 10) / 10;
-  } else if (act === 'grabEnd' && item && vid) {
-    item.revealEnd = Math.round(vid.currentTime * 10) / 10;
-  } else {
-    return;
+    return done();
   }
+
+  // Всё остальное — кнопки полей формата.
+  if (!btn.dataset.fk) return;
+  const list = i === undefined ? type.fields : type.itemFields;
+  const target = i === undefined ? draft : currentItem(i);
+  if (!target) return;
+  if (applyClick(list, btn, target, fieldApi()) === 'changed') done();
+});
+
+// После правки: перерисовать, пересчитать готовность и сохранить.
+function done() {
   renderEditor();
   renderList();
   renderReady();
   saveNow();
-});
+}
 
 // ——— список, готовность, гости ———
 
@@ -580,18 +469,19 @@ $('contestList').addEventListener('click', (e) => {
 
 $('btnAddContest').addEventListener('click', () => {
   const type = getType($('newType').value);
-  const contest = {
-    id: 'c-' + Math.random().toString(36).slice(2, 8),
-    type: type.id,
-    enabled: true,
+  // Общее у всех конкурсов задаёт кабинет, своё добавляет формат.
+  const contest = Object.assign({
     subtitle: 'Новый номер',
     title: type.label,
     rules: '',
     lionLine: '',
     pointsPerCorrect: 1,
     items: []
-  };
-  if (type.id === 'videoChoice') contest.video = '';
+  }, type.newContest ? type.newContest(names(state)) : {});
+  contest.id = 'c-' + Math.random().toString(36).slice(2, 8);
+  contest.type = type.id;
+  contest.enabled = true;
+
   bus.send('saveContest', { contest }).then(() => {
     selectedId = contest.id;
     draft = JSON.parse(JSON.stringify(contest));

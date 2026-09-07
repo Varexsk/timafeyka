@@ -1,4 +1,5 @@
 import { optionsHtml, answerHtml, noteHtml, counterHtml, esc, correctText } from '../util.js';
+import { needAnswer, noOptions } from '../engine/fields.js';
 import { icon } from '../icons.js';
 
 export default {
@@ -8,7 +9,14 @@ export default {
   icon: 'music',
   order: 70,
   prop: { intro: 'mic', question: 'sticks', reveal: 'sticks' },
-  editor: { options: true, media: 'audio', openAnswer: true },
+  itemFields: [
+    { k: 'textarea', f: 'q', label: 'Вопрос', rows: 2 },
+    { k: 'options', f: 'options', check: needAnswer },
+    { k: 'text', f: 'answerText', when: noOptions,
+      label: 'Правильный ответ — покажется крупно на экране' },
+    { k: 'media', f: 'audio', kind: 'audio', label: 'Аудио', required: 'нет аудио' },
+    { k: 'text', f: 'answerNote', label: 'Приписка к ответу (необязательно)' }
+  ],
 
   newItem() {
     return { id: '', q: 'Что за песенка?', audio: '', options: [], answer: null, answerText: '', answerNote: '' };

@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node server/server.js",
     "dev": "node server/server.js",
-    "audio": "node tools/fetch-audio.mjs"
+    "audio": "node tools/fetch-audio.mjs",
+    "test": "node --test"
   },
   "engines": {
     "node": ">=18"

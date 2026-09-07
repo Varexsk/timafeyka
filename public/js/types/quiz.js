@@ -1,4 +1,5 @@
 import { optionsHtml, mediaHtml, answerHtml, noteHtml, counterHtml, questionClass, esc, correctText } from '../util.js';
+import { needAnswer, noOptions } from '../engine/fields.js';
 
 export default {
   id: 'quiz',
@@ -7,7 +8,15 @@ export default {
   icon: 'question',
   order: 10,
   prop: { intro: 'mic', question: '', reveal: 'star' },
-  editor: { options: true, media: 'photo', openAnswer: true },
+  itemFields: [
+    { k: 'textarea', f: 'q', label: 'Вопрос', rows: 2 },
+    { k: 'options', f: 'options', check: needAnswer },
+    { k: 'text', f: 'answerText', when: noOptions,
+      label: 'Правильный ответ — покажется крупно на экране', placeholder: 'Например: «Мама»' },
+    { k: 'media', f: 'media', kind: 'photo', label: 'Фото' },
+    { k: 'text', f: 'answerNote', label: 'Приписка к ответу (необязательно)',
+      placeholder: 'Например: «Ровно в обед!»' }
+  ],
 
   newItem() {
     return { id: '', q: 'Новый вопрос', options: [], answer: null, answerText: '', answerNote: '', media: '' };

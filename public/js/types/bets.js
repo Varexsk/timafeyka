@@ -32,7 +32,17 @@ export default {
   icon: 'target',
   order: 20,
   prop: { intro: 'mic', question: '', reveal: 'star' },
-  editor: { numberAnswer: true },
+  itemFields: [
+    { k: 'textarea', f: 'q', label: 'Вопрос', rows: 2 },
+    { k: 'row',
+      of: [
+        { k: 'number', f: 'value', label: 'Правильное число', step: 'any',
+          placeholder: 'например 3250', required: 'не заполнено правильное число' },
+        { k: 'text', f: 'unit', label: 'Единицы', width: '8rem', placeholder: 'г, см, шт' }
+      ] },
+    { k: 'text', f: 'answerNote', label: 'Приписка к ответу (необязательно)',
+      placeholder: 'Например: «Ровно в обед!»' }
+  ],
 
   newItem() {
     return { id: '', q: 'Сколько?', value: null, unit: '', answerNote: '' };
