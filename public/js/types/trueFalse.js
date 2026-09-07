@@ -10,6 +10,7 @@ export default {
   accent: '#2E6DAF',
   label: 'Правда или ложь',
   icon: 'balance',
+  prop: { intro: 'mic', question: '', reveal: 'star' },
   editor: { options: false, trueFalse: true },
 
   newItem() {

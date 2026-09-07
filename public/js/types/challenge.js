@@ -6,6 +6,7 @@ export default {
   accent: '#D9631B',
   label: 'Фанты и задания',
   icon: 'hat',
+  prop: { intro: 'mic', question: 'whistle', reveal: 'whistle' },
   editor: { options: false, noAnswer: true },
 
   newItem() {
@@ -17,7 +18,7 @@ export default {
     return `
       ${counterHtml(ctx)}
       <div class="ticket pop-in">
-        <div class="ticket-label">Задание от Лёвы</div>
+        <div class="ticket-label">${esc((ctx.names && ctx.names.lion) || 'Лёва')} объявляет задание</div>
         <div class="ticket-text">${esc(item.q)}</div>
       </div>
       ${phase === 'reveal'

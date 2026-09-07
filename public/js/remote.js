@@ -2,6 +2,7 @@
 
 import * as bus from './bus.js';
 import { getType } from './types/index.js';
+import { buildCtx, activeContests } from './engine/ctx.js';
 import { esc, owners, isTeamMode, ownerAvatar } from './util.js';
 import { mountSprite, icon } from './icons.js';
 import { mountArtSprite } from './art.js';
@@ -29,15 +30,8 @@ const QUICK = [
   { screen: 'leaderboard', ic: 'trophy', label: 'Лидеры' }
 ];
 
-function activeContests() {
-  return (state.show.contests || []).filter((c) => c.enabled !== false);
-}
-
 function ctxNow() {
-  const r = state.runtime;
-  const contest = activeContests()[r.contestIndex] || null;
-  const items = (contest && contest.items) || [];
-  return { contest, item: items[r.itemIndex] || null, index: r.itemIndex, total: items.length, phase: r.phase, state };
+  return buildCtx(state);
 }
 
 function toast(text) {
@@ -78,7 +72,7 @@ function render() {
   $('topTitle').textContent = r.screen === 'show' && ctx.contest ? ctx.contest.title : SCREEN_NAMES[r.screen] || 'Показ';
   $('topSub').textContent = r.screen === 'show' && ctx.contest
     ? `${ctx.contest.subtitle || ''} · ${ctx.total ? `вопрос ${r.itemIndex + 1} из ${ctx.total}` : 'без вопросов'}`
-    : 'Цирк Тимоши';
+    : ctx.names.title;
 
   const showPhases = r.screen === 'show';
   $('phaseRow').style.display = showPhases ? '' : 'none';
@@ -97,7 +91,7 @@ function render() {
       <div class="r-note">${esc(ctx.contest.rules || '')}</div>
       <div class="r-note">Показываем афишу. «Дальше» — первый вопрос.</div>`;
   } else {
-    body.innerHTML = getType(ctx.contest.type).remote(ctx);
+    body.innerHTML = ctx.type.remote(ctx);
   }
 
   $('btnReveal').innerHTML = r.phase === 'reveal'
@@ -113,6 +107,10 @@ function render() {
     dots.innerHTML = '';
   }
 
+  document.title = 'Пульт ведущего · ' + ctx.names.title;
+  $('sayText').placeholder = `Что скажет ${ctx.names.lion}?`;
+  $('sayClear').textContent = `Пусть ${ctx.names.lion} говорит своё`;
+
   const teamMode = isTeamMode(state);
   $('scoreTitle').textContent = teamMode ? 'Баллы семьям' : 'Баллы гостям';
   $('newGuest').placeholder = teamMode ? 'Название новой семьи' : 'Имя нового гостя';
@@ -125,7 +123,7 @@ function render() {
       <button class="btn btn--primary" data-award="${esc(o.id)}" data-delta="1">${icon('plus')} 1</button>
     </div>`).join('') || `<div class="r-note">${teamMode ? 'Семей' : 'Гостей'} пока нет — добавь ниже.</div>`;
 
-  $('jumpList').innerHTML = activeContests().map((c, i) => {
+  $('jumpList').innerHTML = activeContests(state).map((c, i) => {
     const t = getType(c.type);
     return `<div class="jump-item ${i === r.contestIndex && r.screen === 'show' ? 'is-current' : ''}" data-jump="${i}">
       ${icon(t.icon)}
@@ -235,7 +233,7 @@ function wire() {
 
   $('sayBtn').addEventListener('click', () => {
     bus.send('lionSay', { text: $('sayText').value });
-    toast('Лёва сказал!');
+    toast(`${ctxNow().names.lion} сказал!`);
   });
   $('sayText').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('sayBtn').click(); });
   $('sayClear').addEventListener('click', () => { bus.send('lionSay', { text: '' }); $('sayText').value = ''; });

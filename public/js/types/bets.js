@@ -1,4 +1,4 @@
-import { counterHtml, noteHtml, esc, owners, ownerAvatar } from '../util.js';
+import { counterHtml, noteHtml, esc, owners, ownerAvatar, fmtNum } from '../util.js';
 import { icon } from '../icons.js';
 
 export function betKey(contest, item) {
@@ -25,15 +25,12 @@ export function winnerId(ctx) {
   return best ? best.id : null;
 }
 
-function fmt(n) {
-  return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
-}
-
 export default {
   id: 'bets',
   accent: '#2F9B4A',
   label: 'Ставки на число',
   icon: 'target',
+  prop: { intro: 'mic', question: '', reveal: 'star' },
   editor: { numberAnswer: true },
 
   newItem() {
@@ -59,15 +56,15 @@ export default {
     return `<div class="bet-card ${o.id === win ? 'is-win' : revealed ? 'is-dim' : ''}" style="--c:${esc(o.color || 'var(--ink)')}">
             ${ownerAvatar(o, 'bet-av')}
             <div class="bet-name">${esc(o.name)}</div>
-            <div class="bet-value">${has ? esc(fmt(bet)) : '…'}</div>
-            ${diff !== null ? `<div class="bet-diff">${diff === 0 ? 'точно!' : 'мимо на ' + fmt(Math.round(diff * 10) / 10)}</div>` : ''}
+            <div class="bet-value">${has ? esc(fmtNum(bet)) : '…'}</div>
+            ${diff !== null ? `<div class="bet-diff">${diff === 0 ? 'точно!' : 'мимо на ' + fmtNum(Math.round(diff * 10) / 10)}</div>` : ''}
             ${o.id === win ? `<span class="bet-crown">${icon('crown-fill')}</span>` : ''}
           </div>`;
   }).join('')}
       </div>
       ${revealed
     ? (hasValue
-      ? `<div class="answer-card pop-in">${esc(fmt(item.value))}${unit ? ' ' + esc(unit) : ''}</div>`
+      ? `<div class="answer-card pop-in">${esc(fmtNum(item.value))}${unit ? ' ' + esc(unit) : ''}</div>`
       : '<div class="answer-empty">Правильное число пока не заполнено — впиши его в кабинете</div>')
     : '<div class="hint">Ведущий записывает ставки на пульте</div>'}
       ${revealed ? noteHtml(item) : ''}
@@ -89,7 +86,7 @@ export default {
       <div class="r-question">${esc(ctx.item.q)}</div>
       <div class="r-answer ${hasValue ? '' : 'is-empty'}">
         <span class="r-answer-label">Правильное число</span>
-        <span class="r-answer-text">${hasValue ? esc(fmt(ctx.item.value)) + (unit ? ' ' + esc(unit) : '') : 'не заполнено'}</span>
+        <span class="r-answer-text">${hasValue ? esc(fmtNum(ctx.item.value)) + (unit ? ' ' + esc(unit) : '') : 'не заполнено'}</span>
       </div>
       <div class="r-note">Впиши, кто сколько назвал:</div>
       ${owners(ctx.state).map((o) => `

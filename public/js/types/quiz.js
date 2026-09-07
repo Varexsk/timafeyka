@@ -1,20 +1,11 @@
-import { optionsHtml, mediaHtml, answerHtml, noteHtml, counterHtml, questionClass, esc, LETTERS } from '../util.js';
-
-function correctText(item) {
-  const opts = item.options || [];
-  if (Number.isInteger(item.answer) && opts[item.answer]) {
-    const o = opts[item.answer];
-    const text = typeof o === 'string' ? o : o.text;
-    return `${LETTERS[item.answer] || ''} — ${text}`;
-  }
-  return (item.answerText || '').trim();
-}
+import { optionsHtml, mediaHtml, answerHtml, noteHtml, counterHtml, questionClass, esc, correctText } from '../util.js';
 
 export default {
   id: 'quiz',
   accent: '#D9A00F',
   label: 'Викторина',
   icon: 'question',
+  prop: { intro: 'mic', question: '', reveal: 'star' },
   editor: { options: true, media: 'photo', openAnswer: true },
 
   newItem() {
@@ -45,7 +36,5 @@ export default {
       </div>
       ${ctx.item.answerNote ? `<div class="r-note">${esc(ctx.item.answerNote)}</div>` : ''}
     `;
-  },
-
-  correctText
+  }
 };

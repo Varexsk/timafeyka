@@ -1,13 +1,9 @@
-import { optionsHtml, counterHtml, noteHtml, esc, LETTERS } from '../util.js';
+import { optionsHtml, counterHtml, noteHtml, esc, correctText } from '../util.js';
 import { icon } from '../icons.js';
 
-function correctText(item) {
-  const opts = item.options || [];
-  if (Number.isInteger(item.answer) && opts[item.answer]) {
-    const o = opts[item.answer];
-    return `${LETTERS[item.answer] || ''} — ${typeof o === 'string' ? o : o.text}`;
-  }
-  return (item.answerText || '').trim();
+// Короткое имя именинника — из настроек праздника, а не из кода.
+function heroOf(ctx) {
+  return (ctx.names && ctx.names.short) || 'именинник';
 }
 
 function seekTo(video, t) {
@@ -22,12 +18,13 @@ export default {
   accent: '#15918D',
   label: 'Выбор на видео',
   icon: 'clapper',
+  prop: { intro: 'mic', question: '', reveal: 'star' },
   editor: { options: true, contestVideo: true, marks: true },
 
-  newItem() {
+  newItem(n) {
     return {
       id: '',
-      q: 'Что выберет Тимоша?',
+      q: `Что выберет ${(n && n.short) || 'именинник'}?`,
       options: [{ text: 'Вариант А', icon: '' }, { text: 'Вариант Б', icon: '' }],
       answer: null,
       answerNote: '',
@@ -38,17 +35,19 @@ export default {
 
   mount(root, ctx) {
     const { contest, item, phase } = ctx;
-    const key = contest.id + '/' + item.id + '/' + (contest.video || '');
+    const hero = heroOf(ctx);
+    // Имя входит в ключ: переименовали именинника в кабинете — блок перерисуется.
+    const key = contest.id + '/' + item.id + '/' + (contest.video || '') + '/' + hero;
     const revealed = phase === 'reveal';
 
     if (root.dataset.vkey !== key) {
       root.dataset.vkey = key;
       root.innerHTML = `
         ${counterHtml(ctx)}
-        <div class="question question--sm">${esc(item.q || 'Что выберет Тимоша?')}</div>
+        <div class="question question--sm">${esc(item.q || `Что выберет ${hero}?`)}</div>
         ${contest.video
           ? `<div class="video-wrap"><video preload="auto" playsinline src="${esc(contest.video)}"></video>
-               <div class="video-badge">${icon('clapper')} Тимоша на арене</div></div>`
+               <div class="video-badge">${icon('clapper')} ${esc(hero)} на арене</div></div>`
           : '<div class="media-missing">Видео ещё не загружено — добавь его в кабинете</div>'}
         <div class="js-options"></div>
         <div class="js-extra"></div>`;
@@ -69,7 +68,7 @@ export default {
     const extra = root.querySelector('.js-extra');
     if (extra) {
       extra.innerHTML = revealed
-        ? (Number.isInteger(item.answer) ? '' : '<div class="answer-empty">Отметь в кабинете, что выбрал Тимоша</div>') + noteHtml(item)
+        ? (Number.isInteger(item.answer) ? '' : `<div class="answer-empty">Отметь в кабинете, что выбрал ${esc(hero)}</div>`) + noteHtml(item)
         : '';
     }
 
@@ -105,9 +104,9 @@ export default {
     const answer = correctText(ctx.item);
     const at = Number(ctx.item.at) || 0;
     return `
-      <div class="r-question">${esc(ctx.item.q || 'Что выберет Тимоша?')}</div>
+      <div class="r-question">${esc(ctx.item.q || `Что выберет ${heroOf(ctx)}?`)}</div>
       <div class="r-answer ${answer ? '' : 'is-empty'}">
-        <span class="r-answer-label">Тимоша выбрал</span>
+        <span class="r-answer-label">${esc(heroOf(ctx))} выбрал</span>
         <span class="r-answer-text">${answer ? esc(answer) : 'не заполнено'}</span>
       </div>
       <div class="r-note">Пауза на ${at.toFixed(1)} сек${ctx.item.revealEnd ? `, доигрываем до ${Number(ctx.item.revealEnd).toFixed(1)} сек` : ''}</div>
@@ -120,7 +119,5 @@ export default {
         <button class="btn btn--ghost" data-media="mark">${icon('restart')} На метку</button>
       </div>
     `;
-  },
-
-  correctText
+  }
 };

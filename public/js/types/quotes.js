@@ -1,19 +1,11 @@
-import { optionsHtml, answerHtml, noteHtml, counterHtml, esc, LETTERS } from '../util.js';
-
-function correctText(item) {
-  const opts = item.options || [];
-  if (Number.isInteger(item.answer) && opts[item.answer]) {
-    const o = opts[item.answer];
-    return `${LETTERS[item.answer] || ''} — ${typeof o === 'string' ? o : o.text}`;
-  }
-  return (item.answerText || '').trim();
-}
+import { optionsHtml, answerHtml, noteHtml, counterHtml, esc, correctText } from '../util.js';
 
 export default {
   id: 'quotes',
   accent: '#6F42D4',
   label: 'Кто это сказал',
   icon: 'quote',
+  prop: { intro: 'mic', question: 'ticket', reveal: 'ticket' },
   editor: { options: true, openAnswer: true, guestOptions: true },
 
   newItem() {
@@ -53,7 +45,5 @@ export default {
       </div>
       ${ctx.item.answerNote ? `<div class="r-note">${esc(ctx.item.answerNote)}</div>` : ''}
     `;
-  },
-
-  correctText
+  }
 };

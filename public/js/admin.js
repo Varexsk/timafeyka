@@ -2,7 +2,7 @@
 
 import * as bus from './bus.js';
 import { TYPES, getType } from './types/index.js';
-import { esc } from './util.js';
+import { esc, names } from './util.js';
 import { mountSprite, icon } from './icons.js';
 import { mountArtSprite, art, hasArt, ART_NAMES, ART_LABELS } from './art.js';
 import { mountAvatarSprite, avatar, hasAvatar, AVATAR_IDS, AVATAR_LABELS } from './avatars.js';
@@ -298,7 +298,7 @@ function renderEditor() {
     </div>
     <div class="field"><label>Правила на афише</label>
       <textarea rows="2" data-f="rules">${esc(draft.rules || '')}</textarea></div>
-    <div class="field"><label>Что скажет Лёва на афише</label>
+    <div class="field"><label>Что скажет ${esc(names(state).lion)} на афише</label>
       <input data-f="lionLine" value="${esc(draft.lionLine || '')}"></div>
 
     ${ed.contestVideo ? `
@@ -525,7 +525,7 @@ $('editor').addEventListener('click', (e) => {
     item.options = state.guests.map((g) => ({ text: g.name, icon: '' }));
     item.answer = null;
   } else if (act === 'addItem') {
-    const fresh = type.newItem ? type.newItem() : { id: '', q: 'Новый вопрос' };
+    const fresh = type.newItem ? type.newItem(names(state)) : { id: '', q: 'Новый вопрос' };
     fresh.id = 'i-' + Math.random().toString(36).slice(2, 8);
     draft.items.push(fresh);
     openItems.add(draft.items.length - 1);
@@ -668,9 +668,17 @@ $('btnResetScores').addEventListener('click', () => {
   if (confirm('Обнулить баллы у всех гостей?')) bus.send('resetScores');
 });
 
-for (const id of ['showHero', 'showAge']) {
+for (const id of ['showHero', 'showHeroShort', 'showLion', 'showTitle', 'showAge']) {
   $(id).addEventListener('input', () => {
-    bus.send('updateShow', { patch: { hero: $('showHero').value, age: Number($('showAge').value) } });
+    bus.send('updateShow', {
+      patch: {
+        hero: $('showHero').value,
+        heroShort: $('showHeroShort').value,
+        lion: $('showLion').value,
+        title: $('showTitle').value,
+        age: Number($('showAge').value)
+      }
+    });
     markSaved();
   });
 }
@@ -764,8 +772,14 @@ bus.onState((next) => {
   renderReady();
   $('btnRehearsal').classList.toggle('a-btn--primary', !!state.runtime.rehearsal);
   $('btnRehearsal').textContent = state.runtime.rehearsal ? 'Закончить репетицию' : 'Репетиция';
-  if (document.activeElement !== $('showHero')) $('showHero').value = state.show.hero || '';
-  if (document.activeElement !== $('showAge')) $('showAge').value = state.show.age === undefined ? 1 : state.show.age;
+  const n = names(state);
+  const fields = { showHero: n.hero, showHeroShort: n.short, showLion: n.lion, showTitle: n.title, showAge: n.age };
+  for (const id of Object.keys(fields)) {
+    // Поле, в котором сейчас печатают, не трогаем — иначе курсор прыгает.
+    if (document.activeElement !== $(id)) $(id).value = fields[id];
+  }
+  document.title = 'Кабинет · ' + n.title;
+  $('brand').lastChild.textContent = n.title + ' · кабинет';
   if (first) {
     const firstContest = (state.show.contests || [])[0];
     if (firstContest) selectContest(firstContest.id, -1);

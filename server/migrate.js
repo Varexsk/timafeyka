@@ -39,6 +39,15 @@ function migrateGuests(list) {
 
 function migrateShow(show) {
   let changed = false;
+
+  // Название цирка стало полем настроек — раньше оно было вшито в экраны.
+  // Склонять чужое имя автоматически нельзя, поэтому ставим значение
+  // по умолчанию: в кабинете его можно переписать целиком.
+  if (show && show.title === undefined) {
+    show.title = 'Цирк Тимоши';
+    changed = true;
+  }
+
   for (const contest of (show && show.contests) || []) {
     for (const item of contest.items || []) {
       for (const opt of item.options || []) {

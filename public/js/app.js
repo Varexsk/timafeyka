@@ -5,7 +5,7 @@ import * as sfx from './sfx.js';
 import * as confetti from './confetti.js';
 import * as music from './music.js';
 import { lionSvg, thoughtHtml, pickLine, lionProp } from './lion.js';
-import { getType } from './types/index.js';
+import { buildCtx } from './engine/ctx.js';
 import * as screens from './screens.js';
 import { esc, owners } from './util.js';
 import { mountSprite, icon } from './icons.js';
@@ -118,16 +118,8 @@ function lionReact(kind) {
 
 // ——— вспомогательное ———
 
-function activeContests() {
-  return (state.show.contests || []).filter((c) => c.enabled !== false);
-}
-
 function currentCtx() {
-  const r = state.runtime;
-  const contest = activeContests()[r.contestIndex] || null;
-  const items = (contest && contest.items) || [];
-  const item = items[r.itemIndex] || null;
-  return { contest, item, index: r.itemIndex, total: items.length, phase: r.phase, state };
+  return buildCtx(state);
 }
 
 function paint(key, html) {
@@ -159,7 +151,7 @@ function scheduleScene(r, ctx) {
 }
 
 function applyAccent(r, ctx) {
-  const accent = r.screen === 'show' && ctx.contest ? getType(ctx.contest.type).accent : '';
+  const accent = r.screen === 'show' && ctx.contest ? ctx.type.accent : '';
   if (accent) {
     document.documentElement.style.setProperty('--accent', accent);
     el.stage.classList.add('has-accent');
@@ -168,15 +160,14 @@ function applyAccent(r, ctx) {
   }
 }
 
-// Реквизит в поднятой лапе Лёвы — под то, что сейчас происходит на арене.
+// Реквизит в поднятой лапе Лёвы. Что именно он держит на своём номере —
+// решает сам формат конкурса (поле prop), а не список условий здесь.
 function propFor(r, ctx) {
   if (r.screen === 'show' && ctx.contest) {
-    if (r.phase === 'intro') return 'mic';
-    const t = ctx.contest.type;
-    if (t === 'challenge') return 'whistle';
-    if (t === 'audioGuess') return 'sticks';
-    if (t === 'quotes') return 'ticket';
-    return r.phase === 'reveal' ? 'star' : '';
+    const p = (ctx.type && ctx.type.prop) || {};
+    if (r.phase === 'intro') return p.intro === undefined ? 'mic' : p.intro;
+    if (r.phase === 'reveal') return p.reveal === undefined ? 'star' : p.reveal;
+    return p.question === undefined ? '' : p.question;
   }
   if (r.screen === 'welcome' || r.screen === 'guests') return 'mic';
   return 'star';
@@ -203,7 +194,7 @@ function paintScene(r, ctx) {
   else if (!ctx.contest) paint('empty', '<div class="hint">Ни одного включённого конкурса — добавь их в кабинете</div>');
   else if (r.phase === 'intro' || !ctx.item) paint('intro|' + ctx.contest.id, screens.intro(ctx.contest));
   else {
-    const type = getType(ctx.contest.type);
+    const type = ctx.type;
     if (type.mount) {
       paintKey = 'mount|' + ctx.contest.id + '|' + r.itemIndex + '|' + r.phase;
       type.mount(el.screen, ctx);
@@ -219,6 +210,9 @@ function render() {
   const r = state.runtime;
   const ctx = currentCtx();
   const bare = r.screen === 'finale' || r.screen === 'diploma';
+
+  // Название цирка задаётся в кабинете — вкладка браузера должна его повторять.
+  if (document.title !== ctx.names.title) document.title = ctx.names.title;
 
   el.screen.classList.toggle('screen--wide', bare);
   el.lionWrap.classList.toggle('is-hidden', bare);
@@ -236,8 +230,7 @@ function render() {
   if (custom) say(custom);
   else if (r.screen === 'show' && ctx.contest && r.phase === 'intro') say(ctx.contest.lionLine || pickLine('intro', r.contestIndex));
   else if (r.screen === 'show' && ctx.contest && ctx.item) {
-    const type = getType(ctx.contest.type);
-    say(type.lion ? type.lion(ctx) : pickLine(r.phase === 'reveal' ? 'reveal' : 'question', r.itemIndex));
+    say(ctx.type.lion ? ctx.type.lion(ctx) : pickLine(r.phase === 'reveal' ? 'reveal' : 'question', r.itemIndex));
   } else say(pickLine(r.screen === 'diploma' ? 'finale' : r.screen, r.contestIndex));
 }
 

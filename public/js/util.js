@@ -91,3 +91,35 @@ export function counterHtml(ctx) {
 export function questionClass(text) {
   return String(text || '').length > 58 ? 'question question--sm' : 'question';
 }
+
+// Имена праздника живут в show, а не в коде: их меняют в кабинете, а не правкой файлов.
+// Название цирка — отдельным полем: «Цирк Тимоши» это родительный падеж,
+// из «Тимоша» его автоматически не получить.
+export function names(state) {
+  const show = (state && state.show) || {};
+  const hero = show.hero || 'Тимофей';
+  return {
+    hero,
+    short: show.heroShort || hero,
+    lion: show.lion || 'Лёва',
+    title: show.title || 'Цирк Тимоши',
+    age: show.age === undefined ? 1 : show.age
+  };
+}
+
+// Правильный ответ одной строкой: «Б — Мама» для вариантов, иначе открытый ответ.
+// Раньше эта функция была скопирована в пяти форматах.
+export function correctText(item) {
+  if (!item) return '';
+  const opts = item.options || [];
+  if (Number.isInteger(item.answer) && opts[item.answer]) {
+    const o = opts[item.answer];
+    return `${LETTERS[item.answer] || ''} — ${typeof o === 'string' ? o : o.text}`;
+  }
+  return (item.answerText || '').trim();
+}
+
+// Разряды числа отбиваем пробелом: 3250 → «3 250».
+export function fmtNum(n) {
+  return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+}

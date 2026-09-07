@@ -1,20 +1,12 @@
-import { optionsHtml, answerHtml, noteHtml, counterHtml, esc, LETTERS } from '../util.js';
+import { optionsHtml, answerHtml, noteHtml, counterHtml, esc, correctText } from '../util.js';
 import { icon } from '../icons.js';
-
-function correctText(item) {
-  const opts = item.options || [];
-  if (Number.isInteger(item.answer) && opts[item.answer]) {
-    const o = opts[item.answer];
-    return `${LETTERS[item.answer] || ''} — ${typeof o === 'string' ? o : o.text}`;
-  }
-  return (item.answerText || '').trim();
-}
 
 export default {
   id: 'audioGuess',
   accent: '#9B6BFF',
   label: 'Угадай мелодию',
   icon: 'music',
+  prop: { intro: 'mic', question: 'sticks', reveal: 'sticks' },
   editor: { options: true, media: 'audio', openAnswer: true },
 
   newItem() {
@@ -61,7 +53,5 @@ export default {
         <button class="btn btn--ghost" data-media="restart">${icon('restart')} Сначала</button>
       </div>
     `;
-  },
-
-  correctText
+  }
 };

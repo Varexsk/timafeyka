@@ -1,0 +1,10 @@
+# Проект пишется и запускается на Windows. Держим один конец строки везде,
+# иначе точечные правки файлов начинают промахиваться.
+* text=auto eol=crlf
+
+*.woff2 binary
+*.ogg   binary
+*.mp3   binary
+*.mp4   binary
+*.png   binary
+*.jpg   binary
