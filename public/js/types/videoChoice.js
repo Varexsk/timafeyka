@@ -18,6 +18,7 @@ export default {
   accent: '#15918D',
   label: 'Выбор на видео',
   icon: 'clapper',
+  order: 30,
   prop: { intro: 'mic', question: '', reveal: 'star' },
   editor: { options: true, contestVideo: true, marks: true },
 

@@ -6,11 +6,15 @@ import * as confetti from './confetti.js';
 import * as music from './music.js';
 import { lionSvg, thoughtHtml, pickLine, lionProp } from './lion.js';
 import { buildCtx } from './engine/ctx.js';
+import { loadTypes } from './engine/registry.js';
 import * as screens from './screens.js';
 import { esc, owners } from './util.js';
 import { mountSprite, icon } from './icons.js';
 import { mountArtSprite } from './art.js';
 import { mountAvatarSprite, avatar, hasAvatar } from './avatars.js';
+
+// Форматы конкурсов подгружаются до первого кадра — сцену рисуют они.
+await loadTypes();
 
 const el = {
   stage: document.getElementById('stage'),

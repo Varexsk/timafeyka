@@ -30,6 +30,7 @@ export default {
   accent: '#2F9B4A',
   label: 'Ставки на число',
   icon: 'target',
+  order: 20,
   prop: { intro: 'mic', question: '', reveal: 'star' },
   editor: { numberAnswer: true },
 

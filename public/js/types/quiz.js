@@ -5,6 +5,7 @@ export default {
   accent: '#D9A00F',
   label: 'Викторина',
   icon: 'question',
+  order: 10,
   prop: { intro: 'mic', question: '', reveal: 'star' },
   editor: { options: true, media: 'photo', openAnswer: true },
 

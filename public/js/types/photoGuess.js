@@ -5,6 +5,7 @@ export default {
   accent: '#D9497F',
   label: 'Угадай по фото',
   icon: 'photo',
+  order: 40,
   prop: { intro: 'mic', question: '', reveal: 'star' },
   editor: { options: true, media: 'photo', openAnswer: true, guestOptions: true },
 

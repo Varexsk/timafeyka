@@ -6,6 +6,7 @@ export default {
   accent: '#D9631B',
   label: 'Фанты и задания',
   icon: 'hat',
+  order: 80,
   prop: { intro: 'mic', question: 'whistle', reveal: 'whistle' },
   editor: { options: false, noAnswer: true },
 

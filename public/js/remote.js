@@ -1,12 +1,14 @@
 // Пульт ведущего: листает показ, подсказывает правильные ответы, начисляет баллы.
 
 import * as bus from './bus.js';
-import { getType } from './types/index.js';
+import { getType, loadTypes } from './engine/registry.js';
 import { buildCtx, activeContests } from './engine/ctx.js';
 import { esc, owners, isTeamMode, ownerAvatar } from './util.js';
 import { mountSprite, icon } from './icons.js';
 import { mountArtSprite } from './art.js';
 import { mountAvatarSprite, avatar, hasAvatar } from './avatars.js';
+
+await loadTypes();
 
 const $ = (id) => document.getElementById(id);
 let state = null;

@@ -6,6 +6,7 @@ export default {
   accent: '#9B6BFF',
   label: 'Угадай мелодию',
   icon: 'music',
+  order: 70,
   prop: { intro: 'mic', question: 'sticks', reveal: 'sticks' },
   editor: { options: true, media: 'audio', openAnswer: true },
 

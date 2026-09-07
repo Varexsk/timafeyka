@@ -5,6 +5,7 @@ export default {
   accent: '#6F42D4',
   label: 'Кто это сказал',
   icon: 'quote',
+  order: 50,
   prop: { intro: 'mic', question: 'ticket', reveal: 'ticket' },
   editor: { options: true, openAnswer: true, guestOptions: true },
 

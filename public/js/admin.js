@@ -1,11 +1,13 @@
 // Кабинет: конкурсы, вопросы, гости, медиа. Всё сохраняется на сервер сразу.
 
 import * as bus from './bus.js';
-import { TYPES, getType } from './types/index.js';
+import { types, getType, loadTypes } from './engine/registry.js';
 import { esc, names } from './util.js';
 import { mountSprite, icon } from './icons.js';
 import { mountArtSprite, art, hasArt, ART_NAMES, ART_LABELS } from './art.js';
 import { mountAvatarSprite, avatar, hasAvatar, AVATAR_IDS, AVATAR_LABELS } from './avatars.js';
+
+await loadTypes();
 
 const $ = (id) => document.getElementById(id);
 
@@ -761,7 +763,7 @@ $('icSettings').innerHTML = icon('settings');
 $('icCheck').innerHTML = icon('check-circle');
 $('icEdit').innerHTML = icon('edit');
 $('icFile').innerHTML = icon('file');
-$('newType').innerHTML = TYPES.map((t) => `<option value="${t.id}">${t.label}</option>`).join('');
+$('newType').innerHTML = types().map((t) => `<option value="${t.id}">${t.label}</option>`).join('');
 
 bus.onState((next) => {
   const first = !state;

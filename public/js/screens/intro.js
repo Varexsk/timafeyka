@@ -2,7 +2,7 @@
 
 import { esc } from '../util.js';
 import { icon } from '../icons.js';
-import { getType } from '../types/index.js';
+import { getType } from '../engine/registry.js';
 
 export function intro(contest) {
   const type = getType(contest.type);

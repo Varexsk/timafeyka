@@ -6,6 +6,7 @@ const path = require('path');
 const os = require('os');
 const { store } = require('./store');
 const { applyCommand } = require('./commands');
+const types = require('./types');
 
 const ROOT = path.join(__dirname, '..');
 const PUBLIC = path.join(ROOT, 'public');
@@ -16,6 +17,7 @@ const MIME = {
   '.html': 'text/html; charset=utf-8',
   '.css': 'text/css; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',
+  '.mjs': 'text/javascript; charset=utf-8',
   '.json': 'application/json; charset=utf-8',
   '.svg': 'image/svg+xml',
   '.png': 'image/png',
@@ -170,6 +172,9 @@ const server = http.createServer(async (req, res) => {
 
   if (pathname === '/api/media') { sendJson(res, 200, { files: listMedia() }); return; }
 
+  // Список форматов конкурсов: только сервер умеет читать папку types/.
+  if (pathname === '/api/types') { sendJson(res, 200, { types: types.list() }); return; }
+
   if (pathname === '/api/events') {
     res.writeHead(200, {
       'Content-Type': 'text/event-stream; charset=utf-8',
@@ -227,6 +232,12 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
+  // Серверная половина формата на телефон гостя не отдаётся.
+  if (/\.server\.mjs$/.test(pathname) || /(^|\/)package\.json$/.test(pathname)) {
+    send(res, 404, 'Не найдено');
+    return;
+  }
+
   const pages = { '/': 'index.html', '/remote': 'remote.html', '/admin': 'admin.html' };
   if (pages[pathname]) { serveFile(req, res, path.join(PUBLIC, pages[pathname])); return; }
 
@@ -234,8 +245,6 @@ const server = http.createServer(async (req, res) => {
   if (!file) { send(res, 403, 'Нельзя'); return; }
   serveFile(req, res, file);
 });
-
-store.load();
 
 server.on('error', (err) => {
   if (err.code === 'EADDRINUSE') {
@@ -249,7 +258,7 @@ server.on('error', (err) => {
   process.exit(1);
 });
 
-server.listen(PORT, '0.0.0.0', () => {
+function banner() {
   const addrs = localAddresses();
   const remote = addrs.length ? 'http://' + addrs[0] + ':' + PORT + '/remote' : 'нет сети';
   console.log('');
@@ -261,7 +270,20 @@ server.listen(PORT, '0.0.0.0', () => {
   console.log('  ─────────────────────────────────────────────');
   console.log('  Чтобы остановить — закрой это окно.');
   console.log('');
-});
+}
+
+// Форматы конкурсов читаются до старта: сервер должен знать, как считать баллы.
+types.load()
+  .then(() => {
+    store.load();
+    server.listen(PORT, '0.0.0.0', banner);
+  })
+  .catch((err) => {
+    console.log('');
+    console.log('  Не смог прочитать форматы конкурсов: ' + err.message);
+    console.log('');
+    process.exit(1);
+  });
 
 process.on('SIGINT', () => { store.flush(); process.exit(0); });
 process.on('SIGTERM', () => { store.flush(); process.exit(0); });
