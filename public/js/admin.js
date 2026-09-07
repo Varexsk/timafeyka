@@ -210,7 +210,10 @@ function renderEditor() {
         <input data-f="title" value="${esc(draft.title || '')}"></div>
       <div class="field" style="flex:0 0 7rem"><label>Баллов за верный</label>
         <input type="number" min="0" max="10" data-f="pointsPerCorrect" value="${Number(draft.pointsPerCorrect) || 1}"></div>
+      <div class="field" style="flex:0 0 7rem"><label>Множитель</label>
+        <input type="number" min="1" max="5" data-f="multiplier" value="${Number(draft.multiplier) || 1}"></div>
     </div>
+    <div class="muted" style="margin:-.3rem 0 .6rem">Множитель больше единицы — это «ва-банк»: на афише появится золотая плашка, а баллы за номер удвоятся.</div>
     <div class="field"><label>Правила на афише</label>
       <textarea rows="2" data-f="rules">${esc(draft.rules || '')}</textarea></div>
     <div class="field"><label>Что скажет ${esc(names(state).lion)} на афише</label>
@@ -373,7 +376,9 @@ $('editor').addEventListener('input', (e) => {
   if (!t.dataset.fk) {
     const f = t.dataset.f;
     if (!f) return;
-    draft[f] = f === 'pointsPerCorrect' ? Number(t.value) : t.value;
+    const numeric = f === 'pointsPerCorrect' || f === 'multiplier';
+    draft[f] = numeric ? Number(t.value) : t.value;
+    if (f === 'multiplier') renderList();
     scheduleSave();
     if (f === 'title') renderList();
     return;

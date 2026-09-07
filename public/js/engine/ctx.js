@@ -15,15 +15,21 @@ export function activeContests(state) {
 
 export function buildCtx(state) {
   const r = (state && state.runtime) || {};
-  const contest = activeContests(state)[r.contestIndex] || null;
+  const list = activeContests(state);
+  const contest = list.find((c) => c.id === r.contestId) || null;
   const items = (contest && contest.items) || [];
+  // Номер вопроса — производная от id, а не наоборот: он нужен только для показа
+  // «вопрос 3 из 8» и для точек перехода на пульте.
+  const at = items.findIndex((it) => it.id === r.itemId);
   return {
     state,
     show: (state && state.show) || {},
     runtime: r,
     contest,
-    item: items[r.itemIndex] || null,
-    index: r.itemIndex,
+    contestIndex: contest ? list.indexOf(contest) : -1,
+    item: at >= 0 ? items[at] : null,
+    items,
+    index: at,
     total: items.length,
     phase: r.phase,
     type: contest ? getType(contest.type) : null,

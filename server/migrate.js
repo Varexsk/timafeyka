@@ -61,4 +61,44 @@ function migrateShow(show) {
   return changed;
 }
 
-module.exports = { migrateGuests, migrateShow };
+// Позиция в показе раньше хранилась номерами в отфильтрованном списке.
+function migrateRuntime(runtime, show) {
+  if (!runtime) return false;
+  let changed = false;
+
+  const active = ((show && show.contests) || []).filter((c) => c.enabled !== false);
+  const toIds = (obj) => {
+    const contest = active[Number(obj.contestIndex) || 0] || active[0] || null;
+    obj.contestId = contest ? contest.id : '';
+    const items = (contest && contest.items) || [];
+    const item = items[Number(obj.itemIndex) || 0] || items[0] || null;
+    obj.itemId = item ? item.id : '';
+    delete obj.contestIndex;
+    delete obj.itemIndex;
+  };
+
+  if (runtime.contestIndex !== undefined || runtime.contestId === undefined) {
+    toIds(runtime);
+    changed = true;
+  }
+  // Тот же перевод для снимка репетиции, если он остался с прошлого запуска.
+  if (runtime.rehearsal && runtime.rehearsal.contestIndex !== undefined) {
+    toIds(runtime.rehearsal);
+    changed = true;
+  }
+  // Последнее начисление раньше было одиночным: {id, delta}. Теперь их может
+  // быть несколько сразу (например, при ничьей), поэтому это список.
+  const last = runtime.lastAward;
+  if (last && last.entries === undefined) {
+    runtime.lastAward = { seq: last.seq || 1, entries: [{ id: last.id, delta: last.delta }] };
+    changed = true;
+  }
+  if (!Array.isArray(runtime.awardLog)) {
+    runtime.awardLog = [];
+    changed = true;
+  }
+
+  return changed;
+}
+
+module.exports = { migrateGuests, migrateShow, migrateRuntime };

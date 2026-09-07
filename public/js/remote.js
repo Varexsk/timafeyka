@@ -3,7 +3,7 @@
 import * as bus from './bus.js';
 import { getType, loadTypes } from './engine/registry.js';
 import { buildCtx, activeContests } from './engine/ctx.js';
-import { esc, owners, isTeamMode, ownerAvatar } from './util.js';
+import { esc, owners, isTeamMode, ownerAvatar, pointsOf } from './util.js';
 import { mountSprite, icon } from './icons.js';
 import { mountArtSprite } from './art.js';
 import { mountAvatarSprite, avatar, hasAvatar } from './avatars.js';
@@ -73,7 +73,7 @@ function render() {
 
   $('topTitle').textContent = r.screen === 'show' && ctx.contest ? ctx.contest.title : SCREEN_NAMES[r.screen] || 'Показ';
   $('topSub').textContent = r.screen === 'show' && ctx.contest
-    ? `${ctx.contest.subtitle || ''} · ${ctx.total ? `вопрос ${r.itemIndex + 1} из ${ctx.total}` : 'без вопросов'}`
+    ? `${ctx.contest.subtitle || ''} · ${ctx.total ? `вопрос ${ctx.index + 1} из ${ctx.total}` : 'без вопросов'}`
     : ctx.names.title;
 
   const showPhases = r.screen === 'show';
@@ -103,8 +103,8 @@ function render() {
 
   const dots = $('itemDots');
   if (r.screen === 'show' && ctx.total > 1) {
-    dots.innerHTML = Array.from({ length: ctx.total }, (_, i) => `
-      <button data-item="${i}" class="${i === r.itemIndex ? 'is-on' : i < r.itemIndex ? 'is-done' : ''}">${i + 1}</button>`).join('');
+    dots.innerHTML = ctx.items.map((it, i) => `
+      <button data-item="${esc(it.id)}" class="${i === ctx.index ? 'is-on' : i < ctx.index ? 'is-done' : ''}">${i + 1}</button>`).join('');
   } else {
     dots.innerHTML = '';
   }
@@ -116,23 +116,45 @@ function render() {
   const teamMode = isTeamMode(state);
   $('scoreTitle').textContent = teamMode ? 'Баллы семьям' : 'Баллы гостям';
   $('newGuest').placeholder = teamMode ? 'Название новой семьи' : 'Имя нового гостя';
-  $('guestRows').innerHTML = owners(state).map((o) => `
+
+  // Кнопка показывает, сколько на самом деле стоит верный ответ в этом номере.
+  const pts = r.screen === 'show' && ctx.contest ? pointsOf(ctx.contest) : 1;
+  const rows = owners(state).map((o) => `
     <div class="g-row">
       ${guestAvatar(o)}
       <span class="nm">${esc(o.name)}</span>
-      <button class="btn btn--ghost" data-award="${esc(o.id)}" data-delta="-1">${icon('minus')}</button>
+      <button class="btn btn--ghost" data-award="${esc(o.id)}" data-delta="${-pts}">${icon('minus')}</button>
       <span class="pt">${o.score || 0}</span>
-      <button class="btn btn--primary" data-award="${esc(o.id)}" data-delta="1">${icon('plus')} 1</button>
-    </div>`).join('') || `<div class="r-note">${teamMode ? 'Семей' : 'Гостей'} пока нет — добавь ниже.</div>`;
+      <button class="btn btn--primary" data-award="${esc(o.id)}" data-delta="${pts}">${icon('plus')} ${pts}</button>
+    </div>`).join('');
 
-  $('jumpList').innerHTML = activeContests(state).map((c, i) => {
+  $('guestRows').innerHTML = (rows || `<div class="r-note">${teamMode ? 'Семей' : 'Гостей'} пока нет — добавь ниже.</div>`) + undoLine();
+
+  $('jumpList').innerHTML = activeContests(state).map((c) => {
     const t = getType(c.type);
-    return `<div class="jump-item ${i === r.contestIndex && r.screen === 'show' ? 'is-current' : ''}" data-jump="${i}">
+    return `<div class="jump-item ${c.id === r.contestId && r.screen === 'show' ? 'is-current' : ''}" data-jump="${esc(c.id)}">
       ${icon(t.icon)}
       <span class="nm">${esc(c.title)}</span>
       <span class="cnt">${(c.items || []).length}</span>
     </div>`;
   }).join('');
+}
+
+// Что начислили последним и кнопка «отменить» — чтобы промах правился одним
+// касанием, а не подбором минусов.
+function undoLine() {
+  const log = (state.runtime.awardLog || []).filter((e) => !e.undone);
+  const last = log[log.length - 1];
+  if (!last) return '';
+  const list = owners(state);
+  const text = (last.entries || []).map((e) => {
+    const o = list.find((x) => x.id === e.id);
+    return `${o ? esc(o.name) : '—'} ${e.delta > 0 ? '+' : ''}${e.delta}`;
+  }).join(', ');
+  return `<div class="r-undo">
+      <span>Начислено: ${text}</span>
+      <button class="btn btn--ghost" data-undo="1">${icon('refresh')} Отменить</button>
+    </div>`;
 }
 
 function musicOn() {
@@ -171,6 +193,14 @@ function wire() {
       toast(delta > 0 ? 'Плюс балл!' : 'Минус балл');
       return;
     }
+    const undo = e.target.closest('[data-undo]');
+    if (undo) {
+      buzz();
+      bus.send('undo');
+      toast('Начисление отменено');
+      return;
+    }
+
     const music = e.target.closest('[data-music]');
     if (music) {
       const next = !musicOn();
@@ -186,13 +216,13 @@ function wire() {
     if (screen) { bus.send('goScreen', { screen: screen.dataset.screen }); return; }
 
     const jump = e.target.closest('[data-jump]');
-    if (jump) { bus.send('goto', { contestIndex: Number(jump.dataset.jump), itemIndex: 0, phase: 'intro' }); return; }
+    if (jump) { bus.send('goto', { contestId: jump.dataset.jump, phase: 'intro' }); return; }
 
     const item = e.target.closest('[data-item]');
     if (item) {
       bus.send('goto', {
-        contestIndex: state.runtime.contestIndex,
-        itemIndex: Number(item.dataset.item),
+        contestId: state.runtime.contestId,
+        itemId: item.dataset.item,
         phase: 'question'
       });
       return;

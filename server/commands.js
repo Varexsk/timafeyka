@@ -13,8 +13,28 @@ function activeContests() {
   return (store.show.contests || []).filter((c) => c.enabled !== false);
 }
 
+// Где мы сейчас — хранится id конкурса и id вопроса, а не их номера.
+// По номерам было хрупко: стоило выключить конкурс посреди показа, и
+// ведущего молча переносило в другое место программы.
 function currentContest() {
-  return activeContests()[store.runtime.contestIndex] || null;
+  return activeContests().find((c) => c.id === store.runtime.contestId) || null;
+}
+
+function contestPos() {
+  return activeContests().findIndex((c) => c.id === store.runtime.contestId);
+}
+
+function itemPos(contest) {
+  return itemsOf(contest).findIndex((it) => it.id === store.runtime.itemId);
+}
+
+// Встаём на конкретный вопрос конкретного конкурса.
+function setPos(contest, itemIndex, phase) {
+  const r = store.runtime;
+  r.contestId = contest ? contest.id : '';
+  const it = itemsOf(contest)[itemIndex];
+  r.itemId = it ? it.id : '';
+  r.phase = phase;
 }
 
 function itemsOf(contest) {
@@ -45,14 +65,12 @@ function goContest(i, atEnd) {
   if (i < 0) { r.screen = 'guests'; return; }
   if (i >= list.length) { r.screen = 'leaderboard'; return; }
   r.screen = 'show';
-  r.contestIndex = i;
-  const items = itemsOf(list[i]);
+  const contest = list[i];
+  const items = itemsOf(contest);
   if (atEnd) {
-    r.itemIndex = Math.max(0, items.length - 1);
-    r.phase = items.length ? 'reveal' : 'intro';
+    setPos(contest, Math.max(0, items.length - 1), items.length ? 'reveal' : 'intro');
   } else {
-    r.itemIndex = 0;
-    r.phase = 'intro';
+    setPos(contest, 0, 'intro');
   }
 }
 
@@ -67,20 +85,19 @@ function next() {
   const contest = currentContest();
   if (!contest) { r.screen = 'leaderboard'; return; }
   const items = itemsOf(contest);
+  const at = itemPos(contest);
 
   if (r.phase === 'intro') {
-    if (!items.length) { goContest(r.contestIndex + 1, false); return; }
-    r.phase = 'question';
-    r.itemIndex = 0;
+    if (!items.length) { goContest(contestPos() + 1, false); return; }
+    setPos(contest, 0, 'question');
     return;
   }
   if (r.phase === 'question') { r.phase = 'reveal'; return; }
-  if (r.itemIndex + 1 < items.length) {
-    r.itemIndex += 1;
-    r.phase = 'question';
+  if (at + 1 < items.length) {
+    setPos(contest, at + 1, 'question');
     return;
   }
-  goContest(r.contestIndex + 1, false);
+  goContest(contestPos() + 1, false);
 }
 
 function prev() {
@@ -93,11 +110,80 @@ function prev() {
 
   if (r.phase === 'reveal') { r.phase = 'question'; return; }
   if (r.phase === 'question') {
-    if (r.itemIndex > 0) { r.itemIndex -= 1; r.phase = 'reveal'; return; }
+    const contest = currentContest();
+    const at = itemPos(contest);
+    if (at > 0) { setPos(contest, at - 1, 'reveal'); return; }
     r.phase = 'intro';
     return;
   }
-  goContest(r.contestIndex - 1, true);
+  goContest(contestPos() - 1, true);
+}
+
+// Конкурс могли выключить или удалить прямо посреди показа. Тогда переходим
+// к ближайшему следующему активному, а не прыгаем куда попало.
+function ensurePosition(fromIndexInShow) {
+  const r = store.runtime;
+  const list = activeContests();
+  if (!list.length) { r.contestId = ''; r.itemId = ''; return; }
+
+  const contest = currentContest();
+  if (contest) {
+    const items = itemsOf(contest);
+    if (items.length && itemPos(contest) < 0) setPos(contest, 0, 'intro');
+    return;
+  }
+
+  const all = store.show.contests || [];
+  const from = typeof fromIndexInShow === 'number' ? Math.max(0, fromIndexInShow) : 0;
+  let next = null;
+  for (let i = from; i < all.length; i++) {
+    if (all[i].enabled !== false) { next = all[i]; break; }
+  }
+  if (!next) next = list[list.length - 1];
+
+  // Экран не трогаем: если ведущий не в показе, просто запоминаем новое место.
+  const screen = r.screen;
+  goContest(list.indexOf(next), false);
+  r.screen = screen;
+}
+
+// ——— баллы ———
+
+// Единственное место, где меняется счёт. Пишем в журнал ровно те дельты,
+// которые реально применились (счёт не уходит ниже нуля), — тогда отмена
+// возвращает всё точь-в-точь.
+function applyAward(entries, reason) {
+  const done = [];
+  for (const e of entries || []) {
+    const owner = findOwner(e.id);
+    if (!owner) continue;
+    const was = Number(owner.score) || 0;
+    const now = Math.max(0, was + (Number(e.delta) || 0));
+    if (now === was) continue;
+    owner.score = now;
+    done.push({ id: e.id, delta: now - was });
+  }
+  if (!done.length) return [];
+
+  const r = store.runtime;
+  const seq = (r.lastAward && r.lastAward.seq ? r.lastAward.seq : 0) + 1;
+  r.lastAward = { seq, entries: done };
+  r.awardLog = (r.awardLog || []).concat([{ seq, at: Date.now(), reason: String(reason || ''), entries: done }]).slice(-20);
+  return ['guests', 'runtime'];
+}
+
+function revertAward(entry) {
+  for (const e of entry.entries || []) {
+    const owner = findOwner(e.id);
+    if (owner) owner.score = Math.max(0, (Number(owner.score) || 0) - e.delta);
+  }
+  entry.undone = true;
+  const r = store.runtime;
+  r.lastAward = {
+    seq: (r.lastAward && r.lastAward.seq ? r.lastAward.seq : 0) + 1,
+    entries: (entry.entries || []).map((e) => ({ id: e.id, delta: -e.delta }))
+  };
+  return ['guests', 'runtime'];
 }
 
 // ——— команды ———
@@ -109,22 +195,26 @@ const handlers = {
   goScreen({ screen }) {
     if (!SCREENS.includes(screen)) return [];
     store.runtime.screen = screen;
-    if (screen === 'show') {
-      store.runtime.contestIndex = clamp(store.runtime.contestIndex, 0, Math.max(0, activeContests().length - 1));
-    }
+    if (screen === 'show') ensurePosition();
     return ['runtime'];
   },
 
-  goto({ contestIndex, itemIndex, phase }) {
-    const r = store.runtime;
+  // Пульт присылает id. Номера тоже принимаем — на случай старой вкладки.
+  goto({ contestId, itemId, contestIndex, itemIndex, phase }) {
     const list = activeContests();
     if (!list.length) return [];
+    const r = store.runtime;
+
+    let contest = contestId ? list.find((c) => c.id === contestId) : null;
+    if (!contest) contest = list[clamp(Number(contestIndex) || 0, 0, list.length - 1)];
+
+    const items = itemsOf(contest);
+    let at = itemId ? items.findIndex((it) => it.id === itemId) : -1;
+    if (at < 0) at = clamp(Number(itemIndex) || 0, 0, Math.max(0, items.length - 1));
+
     r.screen = 'show';
-    r.contestIndex = clamp(Number(contestIndex) || 0, 0, list.length - 1);
-    const items = itemsOf(list[r.contestIndex]);
-    r.itemIndex = clamp(Number(itemIndex) || 0, 0, Math.max(0, items.length - 1));
-    r.phase = ['intro', 'question', 'reveal'].includes(phase) ? phase : 'question';
-    if (!items.length) r.phase = 'intro';
+    const want = ['intro', 'question', 'reveal'].includes(phase) ? phase : 'question';
+    setPos(contest, at, items.length ? want : 'intro');
     return ['runtime'];
   },
 
@@ -165,13 +255,22 @@ const handlers = {
 
   award(payload) {
     const id = payload.id || payload.teamId || payload.guestId;
-    const owner = findOwner(id);
-    if (!owner) return [];
-    const d = Number(payload.delta) || 0;
-    owner.score = Math.max(0, (Number(owner.score) || 0) + d);
-    const prevSeq = store.runtime.lastAward && store.runtime.lastAward.seq ? store.runtime.lastAward.seq : 0;
-    store.runtime.lastAward = { id, delta: d, seq: prevSeq + 1 };
-    return ['guests', 'runtime'];
+    return applyAward([{ id, delta: Number(payload.delta) || 0 }], payload.reason || '');
+  },
+
+  // Отменить последнее начисление. Раньше ошибку можно было исправить
+  // только вручную минусами, и то не всегда точно.
+  undo() {
+    const log = store.runtime.awardLog || [];
+    for (let i = log.length - 1; i >= 0; i--) {
+      if (!log[i].undone) return revertAward(log[i]);
+    }
+    return [];
+  },
+
+  undoAward({ seq }) {
+    const entry = (store.runtime.awardLog || []).find((e) => e.seq === Number(seq) && !e.undone);
+    return entry ? revertAward(entry) : [];
   },
 
   setScore(payload) {
@@ -184,7 +283,10 @@ const handlers = {
   resetScores() {
     store.guests.list.forEach((g) => { g.score = 0; });
     store.guests.teams.forEach((t) => { t.score = 0; });
-    return ['guests'];
+    // Журнал начислений тоже обнуляем: отменять уже нечего.
+    store.runtime.awardLog = [];
+    store.runtime.lastAward = null;
+    return ['guests', 'runtime'];
   },
 
   setMode({ mode }) {
@@ -276,20 +378,26 @@ const handlers = {
     if (!c.id) c.id = newId('c');
     const i = list.findIndex((x) => x.id === c.id);
     if (i >= 0) list[i] = c; else list.push(c);
-    return ['show'];
+    // Вопрос, на котором мы стояли, мог исчезнуть при правке.
+    ensurePosition();
+    return ['show', 'runtime'];
   },
 
   deleteContest({ id }) {
+    const at = (store.show.contests || []).findIndex((c) => c.id === id);
     store.show.contests = store.show.contests.filter((c) => c.id !== id);
-    store.runtime.contestIndex = clamp(store.runtime.contestIndex, 0, Math.max(0, activeContests().length - 1));
+    ensurePosition(at);
     return ['show', 'runtime'];
   },
 
   toggleContest({ id, enabled }) {
-    const c = store.show.contests.find((x) => x.id === id);
+    const list = store.show.contests;
+    const c = list.find((x) => x.id === id);
     if (!c) return [];
     c.enabled = enabled === undefined ? c.enabled === false : !!enabled;
-    return ['show'];
+    // Выключили тот конкурс, что сейчас на экране, — переходим к следующему.
+    ensurePosition(list.findIndex((x) => x.id === id));
+    return ['show', 'runtime'];
   },
 
   moveContest({ id, dir }) {
@@ -310,8 +418,8 @@ const handlers = {
       r.rehearsal = {
         scores: store.guests.list.concat(store.guests.teams).map((o) => ({ id: o.id, score: o.score || 0 })),
         screen: r.screen,
-        contestIndex: r.contestIndex,
-        itemIndex: r.itemIndex,
+        contestId: r.contestId,
+        itemId: r.itemId,
         phase: r.phase
       };
       return ['runtime'];
@@ -323,8 +431,8 @@ const handlers = {
       if (owner) owner.score = s2.score;
     }
     r.screen = snap.screen;
-    r.contestIndex = snap.contestIndex;
-    r.itemIndex = snap.itemIndex;
+    r.contestId = snap.contestId || '';
+    r.itemId = snap.itemId || '';
     r.phase = snap.phase;
     r.rehearsal = null;
     return ['runtime', 'guests'];

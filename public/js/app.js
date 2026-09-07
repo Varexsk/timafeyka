@@ -8,7 +8,7 @@ import { lionSvg, thoughtHtml, pickLine, lionProp } from './lion.js';
 import { buildCtx } from './engine/ctx.js';
 import { loadTypes } from './engine/registry.js';
 import * as screens from './screens.js';
-import { esc, owners } from './util.js';
+import { esc, owners, pointsOf } from './util.js';
 import { mountSprite, icon } from './icons.js';
 import { mountArtSprite } from './art.js';
 import { mountAvatarSprite, avatar, hasAvatar } from './avatars.js';
@@ -200,11 +200,11 @@ function paintScene(r, ctx) {
   else {
     const type = ctx.type;
     if (type.mount) {
-      paintKey = 'mount|' + ctx.contest.id + '|' + r.itemIndex + '|' + r.phase;
+      paintKey = 'mount|' + ctx.contest.id + '|' + r.itemId + '|' + r.phase;
       type.mount(el.screen, ctx);
     } else {
       const betsKey = ctx.contest.type === 'bets' ? JSON.stringify(r.bets || {}) : '';
-      paint(['q', ctx.contest.id, r.itemIndex, r.phase, JSON.stringify(ctx.item), betsKey].join('|'), type.stage(ctx));
+      paint(['q', ctx.contest.id, r.itemId, r.phase, JSON.stringify(ctx.item), betsKey].join('|'), type.stage(ctx));
     }
   }
 }
@@ -232,10 +232,10 @@ function render() {
   // реплика львёнка
   const custom = (r.lionLine || '').trim();
   if (custom) say(custom);
-  else if (r.screen === 'show' && ctx.contest && r.phase === 'intro') say(ctx.contest.lionLine || pickLine('intro', r.contestIndex));
+  else if (r.screen === 'show' && ctx.contest && r.phase === 'intro') say(ctx.contest.lionLine || pickLine('intro', ctx.contestIndex));
   else if (r.screen === 'show' && ctx.contest && ctx.item) {
-    say(ctx.type.lion ? ctx.type.lion(ctx) : pickLine(r.phase === 'reveal' ? 'reveal' : 'question', r.itemIndex));
-  } else say(pickLine(r.screen === 'diploma' ? 'finale' : r.screen, r.contestIndex));
+    say(ctx.type.lion ? ctx.type.lion(ctx) : pickLine(r.phase === 'reveal' ? 'reveal' : 'question', ctx.index));
+  } else say(pickLine(r.screen === 'diploma' ? 'finale' : r.screen, ctx.contestIndex));
 }
 
 function chipAvatar(g) {
@@ -246,9 +246,11 @@ function chipAvatar(g) {
 }
 
 function renderScorebar() {
-  const hot = state.runtime.lastAward && state.runtime.lastAward.id;
+  // Подсвечиваем всех, кому только что начислили: их может быть несколько сразу.
+  const last = state.runtime.lastAward;
+  const hot = new Set(((last && last.entries) || []).map((e) => e.id));
   el.scorebar.innerHTML = owners(state).map((g) => `
-    <div class="chip ${g.id === hot ? 'is-hot' : ''}" data-guest="${esc(g.id)}" style="--c:${esc(g.color || 'var(--ink)')}">
+    <div class="chip ${hot.has(g.id) ? 'is-hot' : ''}" data-guest="${esc(g.id)}" style="--c:${esc(g.color || 'var(--ink)')}">
       ${chipAvatar(g)}
       <span>${esc(g.name)}</span>
       <span class="pts">${g.score || 0}</span>
@@ -298,19 +300,22 @@ function reactions() {
 
   if (r.lastAward && r.lastAward.seq !== seen.award) {
     seen.award = r.lastAward.seq;
-    sfx.play(r.lastAward.delta >= 0 ? 'point' : 'wrong');
-    const chip = el.scorebar.querySelector(`[data-guest="${r.lastAward.id}"]`);
-    if (chip) {
-      popPoint(chip, r.lastAward.delta);
-      if (r.lastAward.delta > 0) {
+    const entries = r.lastAward.entries || [];
+    const plus = entries.some((e) => e.delta > 0);
+    sfx.play(plus ? 'point' : 'wrong');
+    for (const e of entries) {
+      const chip = el.scorebar.querySelector(`[data-guest="${e.id}"]`);
+      if (!chip) continue;
+      popPoint(chip, e.delta);
+      if (e.delta > 0) {
         const box = chip.getBoundingClientRect();
         confetti.sparkleAt(box.left + box.width / 2, box.top + box.height / 2, 22);
-        lionReact('happy');
       }
     }
+    if (plus) lionReact('happy');
   }
 
-  const phaseKey = r.screen + '|' + r.contestIndex + '|' + r.itemIndex + '|' + r.phase;
+  const phaseKey = r.screen + '|' + r.contestId + '|' + r.itemId + '|' + r.phase;
   if (phaseKey !== seen.phase) {
     const prev = seen.phase;
     seen.phase = phaseKey;
@@ -355,6 +360,12 @@ function syncMusicDuck() {
 
 function award(id, delta) { bus.send('award', { id, delta }); }
 
+// Сколько стоит верный ответ в текущем номере. Вне конкурса — просто балл.
+function pointsNow() {
+  const ctx = currentCtx();
+  return state.runtime.screen === 'show' && ctx.contest ? pointsOf(ctx.contest) : 1;
+}
+
 function onKey(e) {
   ensureSound();
   const k = e.key;
@@ -367,15 +378,16 @@ function onKey(e) {
   if (k === 'c' || k === 'C' || k === 'с' || k === 'С') { bus.send('fx', { type: 'confetti' }); return; }
   if (k === 'd' || k === 'D' || k === 'в' || k === 'В') { bus.send('fx', { type: 'drumroll' }); return; }
   if (k === 'm' || k === 'M' || k === 'ь' || k === 'Ь') { bus.send('music', { on: !(state.runtime.music && state.runtime.music.on) }); return; }
+  if (k === 'z' || k === 'Z' || k === 'я' || k === 'Я') { bus.send('undo'); return; }
   if (/^[1-9]$/.test(k)) {
     const o = owners(state)[Number(k) - 1];
-    if (o) award(o.id, 1);
+    if (o) award(o.id, pointsNow());
     return;
   }
   if (/^[!@#$%^&*(]$/.test(k)) {
     const idx = ')!@#$%^&*('.indexOf(k) - 1;
     const o = owners(state)[idx];
-    if (o) award(o.id, -1);
+    if (o) award(o.id, -pointsNow());
   }
 }
 

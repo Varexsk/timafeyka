@@ -107,6 +107,23 @@ body.is-rehearsal .rehearsal-bar { display: flex; }
 .r-media-controls { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.5rem; }
 .r-media-controls .btn { flex: 1 1 30%; font-size: 0.88rem; padding: 0.55rem 0.4rem; }
 
+/* Что начислили последним — и кнопка это отменить. */
+.r-undo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.6rem;
+  padding-top: 0.6rem;
+  border-top: 0.08rem dashed rgba(58, 35, 80, 0.2);
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--ink-soft);
+}
+
+.r-undo span { flex: 1; min-width: 8rem; }
+.r-undo .btn { padding: 0.45rem 0.7rem; font-size: 0.88rem; }
+
 .g-row {
   display: flex;
   align-items: center;

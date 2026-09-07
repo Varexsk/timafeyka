@@ -5,7 +5,9 @@ const path = require('path');
 const seed = require('./seed');
 const migrate = require('./migrate');
 
-const DATA = path.join(__dirname, '..', 'data');
+// Обычно состояние лежит в data/ рядом с проектом. Переменная нужна тестам,
+// чтобы гонять команды на временной копии и не портить настоящий праздник.
+const DATA = process.env.CIRK_DATA || path.join(__dirname, '..', 'data');
 const FILES = { show: 'show.json', guests: 'guests.json', runtime: 'runtime.json' };
 
 function readJson(name) {
@@ -42,6 +44,7 @@ const store = {
     if (!this.runtime.bets) this.runtime.bets = {};
     migrate.migrateGuests(this.guests.list);
     migrate.migrateShow(this.show);
+    migrate.migrateRuntime(this.runtime, this.show);
     // На старте ничего не воспроизводим сами: команда видео должна прийти от экрана.
     this.runtime.fx = { type: '', seq: 0 };
     this.runtime.music = { on: false, seq: 0 };

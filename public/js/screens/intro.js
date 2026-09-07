@@ -6,11 +6,13 @@ import { getType } from '../engine/registry.js';
 
 export function intro(contest) {
   const type = getType(contest.type);
+  const mult = Number(contest.multiplier) || 1;
   return `
     <div class="poster pop-in">
       ${icon(type.icon, 'poster-ic')}
       <div class="eyebrow">${esc(contest.subtitle || 'Следующий номер')}</div>
       <h2 class="title-l gold-text">${esc(contest.title)}</h2>
+      ${mult > 1 ? `<div class="poster-mult">Ва-банк! Баллы ×${esc(mult)}</div>` : ''}
       ${contest.rules ? `<div class="rules">${esc(contest.rules)}</div>` : ''}
     </div>
     <div class="hint">Готовы? Поехали!</div>

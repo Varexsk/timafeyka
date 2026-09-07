@@ -113,6 +113,21 @@
   background: repeating-linear-gradient(135deg,
     var(--red) 0 1.1rem, #fff 1.1rem 2.2rem);
 }
+/* «Ва-банк»: за номер дают больше баллов — это должно быть видно с дивана. */
+.poster-mult {
+  display: inline-block;
+  margin-top: 0.5rem;
+  padding: 0.28rem 0.9rem;
+  border: 0.14rem solid var(--yellow-deep);
+  border-radius: 999px;
+  background: linear-gradient(180deg, #FFE9A8, var(--yellow));
+  color: var(--ink);
+  font-family: var(--font-slab);
+  font-size: 1.15rem;
+  letter-spacing: 0.02em;
+  box-shadow: 0 0.2rem 0 var(--yellow-deep);
+}
+
 .poster .rules {
   margin-top: 0.9rem;
   font-size: 1.3rem;

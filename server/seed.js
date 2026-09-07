@@ -266,15 +266,19 @@ const show = {
 
 const runtime = {
   screen: 'welcome',
-  contestIndex: 0,
-  itemIndex: 0,
+  // Позиция в показе — по id, а не по номеру: выключенный посреди праздника
+  // конкурс не должен утаскивать ведущего в другое место программы.
+  contestId: '',
+  itemId: '',
   phase: 'intro',
   lionLine: '',
   fx: { type: '', seq: 0 },
   music: { on: false, seq: 0 },
   video: { action: 'pause', seq: 0, at: 0 },
   bets: {},
-  lastAward: null
+  lastAward: null,
+  // Последние начисления — чтобы ведущий мог отменить промах одним касанием.
+  awardLog: []
 };
 
 module.exports = { show, guests: { list: guests, teams }, runtime };

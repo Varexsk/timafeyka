@@ -107,6 +107,15 @@ export function names(state) {
   };
 }
 
+// Сколько баллов даёт верный ответ в этом конкурсе. Поле pointsPerCorrect
+// было в данных с самого начала, но нигде не читалось — везде стояла единица.
+export function pointsOf(contest) {
+  if (!contest) return 1;
+  const base = Number(contest.pointsPerCorrect);
+  const mult = Number(contest.multiplier);
+  return Math.max(0, (base > 0 ? base : 1) * (mult > 0 ? mult : 1));
+}
+
 // Правильный ответ одной строкой: «Б — Мама» для вариантов, иначе открытый ответ.
 // Раньше эта функция была скопирована в пяти форматах.
 export function correctText(item) {
