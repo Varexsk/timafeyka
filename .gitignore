@@ -1,0 +1,14 @@
+# Текущее состояние праздника — создаётся само из server/seed.js
+/data/
+/data-backup-v1/
+
+# Твои фото, видео и музыка. В репозиторий не кладём: тяжёлые и личные.
+/media/*
+!/media/CREDITS.md
+!/media/*/
+/media/*/*
+!/media/*/README.txt
+
+# Node
+node_modules/
+npm-debug.log*

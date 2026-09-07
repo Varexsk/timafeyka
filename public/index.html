@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Цирк Тимоши</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/theme.css">
+  <link rel="stylesheet" href="css/circus.css">
+  <link rel="stylesheet" href="css/screens.css">
+</head>
+<body class="tv">
+  <div class="stage" id="stage">
+    <div class="sky" id="sky"></div>
+    <div class="accent-wash"></div>
+    <div class="balloons" id="balloons"></div>
+    <div class="tent"></div>
+    <div class="garland" id="garland"></div>
+    <div class="curtain curtain--left"></div>
+    <div class="curtain curtain--right"></div>
+    <div class="ring"></div>
+
+    <main class="screen" id="screen"></main>
+
+    <div class="lion-wrap" id="lionWrap"></div>
+    <div class="scorebar" id="scorebar"></div>
+
+    <canvas id="confetti"></canvas>
+    <div class="offline" id="offline">Нет связи с сервером — пробую переподключиться…</div>
+    <div class="rehearsal-badge">Репетиция — баллы не считаются</div>
+    <button class="sound-nudge" id="soundNudge" hidden>Включить звук</button>
+
+    <div class="tv-panel" id="tvPanel">
+      <h3>Баллы</h3>
+      <div id="panelGuests"></div>
+      <h3>Клавиши</h3>
+      <div class="keys">
+        <kbd>→</kbd>/<kbd>пробел</kbd> дальше · <kbd>←</kbd> назад<br>
+        <kbd>R</kbd> показать ответ · <kbd>L</kbd> лидеры<br>
+        <kbd>1</kbd>…<kbd>9</kbd> +1 баллу гостю (с <kbd>Shift</kbd> — минус)<br>
+        <kbd>C</kbd> конфетти · <kbd>D</kbd> дробь · <kbd>M</kbd> музыка<br>
+        <kbd>F</kbd> полный экран · <kbd>H</kbd> скрыть эту панель
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+{
+  "name": "cirk-timoshi",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Сайт для конкурсов на первый день рождения Тимофея: экран для телевизора, пульт с телефона, кабинет ведущего",
+  "scripts": {
+    "start": "node server/server.js",
+    "dev": "node server/server.js",
+    "audio": "node tools/fetch-audio.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

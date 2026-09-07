@@ -1,0 +1,331 @@
+/* Декорации дневного карнавала: полосатый фон, шатёр, флажки, кулисы, манеж, львёнок Лёва. */
+
+.stage {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background:
+    radial-gradient(120% 70% at 50% 0%, rgba(255, 201, 60, 0.28) 0%, rgba(255, 246, 229, 0) 55%),
+    repeating-linear-gradient(90deg,
+      #FFF6E5 0 3.2rem,
+      #FFF0D6 3.2rem 6.4rem);
+}
+
+/* ——— конфетти-точки на фоне ——— */
+
+.sky { position: absolute; inset: 0; pointer-events: none; }
+.dot {
+  position: absolute;
+  border-radius: 50%;
+  opacity: 0.5;
+  animation: dot-drift 7s ease-in-out infinite;
+}
+.dot.is-bar { border-radius: 0.12rem; }
+@keyframes dot-drift {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-0.7rem) rotate(18deg); }
+}
+
+/* ——— шарики по краям ——— */
+
+.balloons { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+
+.balloon {
+  position: absolute;
+  width: 4.2rem;
+  pointer-events: none;
+  animation: balloon-up 22s linear infinite;
+}
+.balloon svg { display: block; width: 100%; filter: drop-shadow(0 0.4rem 0.5rem rgba(58, 35, 80, 0.16)); }
+@keyframes balloon-up {
+  0% { transform: translateY(110vh) rotate(-4deg); }
+  100% { transform: translateY(-30vh) rotate(4deg); }
+}
+
+/* ——— купол шатра ——— */
+
+.tent {
+  position: absolute;
+  top: 0;
+  left: -2%;
+  width: 104%;
+  height: 6.6rem;
+  background: repeating-conic-gradient(from 0deg at 50% -8rem,
+    var(--red) 0 3.2deg, #FFFDF7 3.2deg 6.4deg);
+  -webkit-mask:
+    radial-gradient(circle 1.15rem at 50% 0%, transparent 97%, #000 100%) 0 100% / 2.3rem 1.3rem repeat-x,
+    linear-gradient(#000, #000) 0 0 / 100% calc(100% - 1.25rem) no-repeat;
+  mask:
+    radial-gradient(circle 1.15rem at 50% 0%, transparent 97%, #000 100%) 0 100% / 2.3rem 1.3rem repeat-x,
+    linear-gradient(#000, #000) 0 0 / 100% calc(100% - 1.25rem) no-repeat;
+  filter: drop-shadow(0 0.4rem 0.5rem rgba(58, 35, 80, 0.18));
+}
+.tent::after {
+  content: '';
+  position: absolute;
+  inset: auto 0 1.25rem 0;
+  height: 0.32rem;
+  background: var(--yellow);
+}
+
+/* ——— гирлянда флажков ——— */
+
+.garland { position: absolute; top: 5.6rem; left: 0; width: 100%; height: 7.5rem; pointer-events: none; }
+.garland .rope { fill: none; stroke: rgba(58, 35, 80, 0.35); stroke-width: 0.16rem; }
+.flag {
+  position: absolute;
+  width: 1.7rem;
+  height: 2.3rem;
+  margin-left: -0.85rem;
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+  transform-origin: 50% 0;
+  animation: flag-wave 3.2s ease-in-out infinite;
+}
+@keyframes flag-wave {
+  0%, 100% { transform: rotate(-4deg); }
+  50% { transform: rotate(4deg); }
+}
+.bulb {
+  position: absolute;
+  width: 0.8rem;
+  height: 1rem;
+  margin: -0.4rem 0 0 -0.4rem;
+  border-radius: 45% 45% 55% 55% / 40% 40% 60% 60%;
+  animation: glow 2.2s ease-in-out infinite;
+}
+@keyframes glow {
+  0%, 100% { filter: brightness(0.85) saturate(0.8); }
+  50% { filter: brightness(1.35) saturate(1.3); }
+}
+
+/* ——— кулисы ——— */
+
+.curtain {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 7.5%;
+  pointer-events: none;
+  background: repeating-linear-gradient(90deg,
+    #C9303C 0, #E63946 1.1rem, #FF5A66 2.1rem, #E63946 3.1rem, #C9303C 4.2rem);
+  box-shadow: inset 0 2rem 3rem rgba(58, 35, 80, 0.25);
+}
+.curtain--left { left: 0; border-radius: 0 30% 10% 0 / 0 8% 3% 0; }
+.curtain--right { right: 0; border-radius: 30% 0 0 10% / 8% 0 0 3%; }
+.curtain::after {
+  content: '';
+  position: absolute;
+  top: 42%;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  background: var(--yellow);
+  border: 0.16rem solid var(--yellow-deep);
+  box-shadow: 0 0.25rem 0 rgba(58, 35, 80, 0.18);
+}
+.curtain--left::after { right: -1rem; }
+.curtain--right::after { left: -1rem; }
+
+/* ——— манеж внизу ——— */
+
+.ring {
+  position: absolute;
+  left: -5%;
+  right: -5%;
+  bottom: 0;
+  height: 9rem;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(255, 224, 170, 0) 0%, #F6DFB4 45%, #EFD3A0 100%);
+  border-radius: 50% 50% 0 0 / 3.5rem 3.5rem 0 0;
+}
+.ring::before {
+  content: '';
+  position: absolute;
+  inset: 2.4rem 12% auto 12%;
+  height: 0.5rem;
+  border-radius: 999px;
+  background: var(--red);
+  opacity: 0.28;
+}
+
+/* ——— львёнок и облако мыслей ——— */
+
+.lion-wrap {
+  position: absolute;
+  left: 1.5%;
+  bottom: 0;
+  width: 21rem;
+  pointer-events: none;
+  z-index: 6;
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+.lion-wrap.is-hidden { opacity: 0; transform: translateY(4rem); }
+
+.lion {
+  width: 15rem;
+  display: block;
+  margin-left: 1.5rem;
+  transform-origin: 50% 100%;
+  animation: lion-idle 3.6s ease-in-out infinite;
+  filter: drop-shadow(0 0.5rem 0.6rem rgba(58, 35, 80, 0.22));
+}
+@keyframes lion-idle {
+  0%, 100% { transform: translateY(0) rotate(-0.6deg); }
+  50% { transform: translateY(-0.55rem) rotate(0.6deg); }
+}
+.lion .mane { animation: mane-turn 7s ease-in-out infinite; transform-origin: 100px 96px; }
+@keyframes mane-turn {
+  0%, 100% { transform: rotate(-2.5deg); }
+  50% { transform: rotate(2.5deg); }
+}
+.lion .tail { animation: tail-wag 2.4s ease-in-out infinite; transform-origin: 138px 214px; }
+@keyframes tail-wag {
+  0%, 100% { transform: rotate(-7deg); }
+  50% { transform: rotate(9deg); }
+}
+.lion .eyelid { transform-origin: center; transform: scaleY(0); animation: blink 5.2s infinite; }
+@keyframes blink {
+  0%, 92%, 100% { transform: scaleY(0); }
+  94%, 97% { transform: scaleY(1); }
+}
+.lion .arm-wave { transform-origin: 62px 190px; animation: wave 2.8s ease-in-out infinite; }
+@keyframes wave {
+  0%, 100% { transform: rotate(0deg); }
+  30% { transform: rotate(-16deg); }
+  60% { transform: rotate(4deg); }
+}
+
+.lion-wrap.is-happy .lion { animation: lion-jump 0.55s ease-out 3; }
+@keyframes lion-jump {
+  0% { transform: translateY(0) scale(1, 1); }
+  30% { transform: translateY(-2.2rem) scale(0.95, 1.06); }
+  60% { transform: translateY(0) scale(1.06, 0.94); }
+  100% { transform: translateY(0) scale(1, 1); }
+}
+.lion-wrap.is-sad .lion { animation: lion-sad 1.1s ease-in-out 2; }
+@keyframes lion-sad {
+  0%, 100% { transform: rotate(0deg) translateY(0); }
+  50% { transform: rotate(-6deg) translateY(0.6rem); }
+}
+
+/* Облако мыслей: несколько белых блобов сливаются в одно облако,
+   общий контур рисуется четырьмя тенями по сторонам. */
+.thought {
+  position: relative;
+  margin-left: 3.5rem;
+  width: 20rem;
+  min-height: 8.5rem;
+  filter:
+    drop-shadow(0.13rem 0 0 var(--ink)) drop-shadow(-0.13rem 0 0 var(--ink))
+    drop-shadow(0 0.13rem 0 var(--ink)) drop-shadow(0 -0.13rem 0 var(--ink))
+    drop-shadow(0 0.6rem 0.7rem rgba(58, 35, 80, 0.18));
+  animation: float 4.6s ease-in-out infinite;
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0) rotate(-0.4deg); }
+  50% { transform: translateY(-0.7rem) rotate(0.5deg); }
+}
+.thought .puff { position: absolute; background: var(--paper); border-radius: 50%; }
+.thought .body {
+  position: relative;
+  background: var(--paper);
+  border-radius: 46% 54% 50% 50% / 52% 48% 54% 46%;
+  padding: 1.5rem 1.6rem;
+  min-height: 8.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+.thought .text {
+  font-weight: 900;
+  font-size: 1.15rem;
+  line-height: 1.25;
+  color: var(--ink);
+  position: relative;
+  z-index: 2;
+}
+.thought .trail-1, .thought .trail-2, .thought .trail-3 {
+  position: absolute;
+  background: var(--paper);
+  border-radius: 50%;
+  left: 2.2rem;
+}
+.thought .trail-1 { width: 2.1rem; height: 2.1rem; bottom: -1.4rem; }
+.thought .trail-2 { width: 1.35rem; height: 1.35rem; bottom: -2.9rem; left: 1.2rem; }
+.thought .trail-3 { width: 0.8rem; height: 0.8rem; bottom: -4rem; left: 0.5rem; }
+
+/* ——— конфетти ——— */
+
+/* width/height обязательны: canvas — замещаемый элемент, для него inset: 0
+   не растягивает бокс, а оставляет внутренний размер 300×150. */
+#confetti {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 20;
+}
+
+/* ——— служебные плашки ——— */
+
+.offline {
+  position: absolute;
+  top: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--red);
+  border: 0.14rem solid var(--red-deep);
+  color: #fff;
+  padding: 0.5rem 1.2rem;
+  border-radius: 999px;
+  font-weight: 900;
+  z-index: 40;
+  display: none;
+  box-shadow: var(--sticker-sm);
+}
+.is-offline .offline { display: block; }
+
+.rehearsal-badge {
+  position: absolute;
+  top: 7.4rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: none;
+  align-items: center;
+  gap: 0.4rem;
+  background: var(--purple);
+  color: #fff;
+  border: 0.14rem solid var(--purple-deep);
+  border-radius: 999px;
+  padding: 0.35rem 1rem;
+  font-weight: 900;
+  font-size: 0.95rem;
+  z-index: 30;
+  box-shadow: var(--sticker-sm);
+}
+.is-rehearsal .rehearsal-badge { display: inline-flex; }
+
+/* ——— занавес между номерами ——— */
+
+.curtain { transition: width 0.45s cubic-bezier(0.6, 0, 0.25, 1); z-index: 2; }
+.stage.is-curtain .curtain { z-index: 12; }
+.stage.is-curtain .curtain--left,
+.stage.is-curtain .curtain--right { width: 51%; }
+.stage.is-curtain .curtain--left { border-radius: 0 6% 2% 0 / 0 3% 1% 0; }
+.stage.is-curtain .curtain--right { border-radius: 6% 0 0 2% / 3% 0 0 1%; }
+
+/* ——— цветной подмес под текущий конкурс ——— */
+
+.accent-wash {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: var(--accent, transparent);
+  opacity: 0;
+  mix-blend-mode: multiply;
+  transition: background 0.6s ease, opacity 0.6s ease;
+}
+.stage.has-accent .accent-wash { opacity: 0.07; }

@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Кабинет · Цирк Тимоши</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/theme.css">
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body class="admin">
+  <header class="a-top">
+    <span class="brand" id="brand">Цирк Тимоши · кабинет</span>
+    <span class="saved" id="saved">сохранено</span>
+    <span class="spacer"></span>
+    <a class="a-btn" href="/" target="_blank" id="lnkTv">Экран</a>
+    <a class="a-btn" href="/remote" target="_blank" id="lnkRemote">Пульт</a>
+    <button class="a-btn" id="btnRehearsal">Репетиция</button>
+    <button class="a-btn" id="btnExport">Бэкап</button>
+    <button class="a-btn" id="btnImport">Восстановить</button>
+  </header>
+
+  <div class="a-wrap">
+    <div>
+      <section class="panel">
+        <header><span id="icList"></span>Программа праздника<span class="spacer"></span></header>
+        <div class="body tight"><div class="c-list" id="contestList"></div></div>
+        <div class="body" style="border-top:1px solid var(--a-line)">
+          <div class="field-row">
+            <div class="field" style="margin:0"><select id="newType"></select></div>
+            <button class="a-btn a-btn--primary" id="btnAddContest">Создать</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <header>
+          <span id="icTeams"></span>Семьи
+          <span class="spacer"></span>
+          <label class="mode-switch"><input type="checkbox" id="modeTeams"> считать по семьям</label>
+        </header>
+        <div class="body">
+          <div class="g-table" id="teamList"></div>
+          <div class="field-row" style="margin-top:.6rem">
+            <div class="field" style="margin:0"><input id="newTeamName" placeholder="Название семьи"></div>
+            <button class="a-btn" id="btnAddTeam">Добавить</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <header><span id="icUsers"></span>Гости<span class="spacer"></span></header>
+        <div class="body">
+          <div class="g-table" id="guestList"></div>
+          <div class="field-row" style="margin-top:.6rem">
+            <div class="field" style="margin:0"><input id="newGuestName" placeholder="Имя гостя"></div>
+            <button class="a-btn" id="btnAddGuest">Добавить</button>
+          </div>
+          <button class="a-btn a-btn--danger a-btn--wide" id="btnResetScores" style="margin-top:.5rem">
+            Обнулить все баллы
+          </button>
+        </div>
+      </section>
+
+      <section class="panel">
+        <header><span id="icSettings"></span>Праздник</header>
+        <div class="body">
+          <div class="field-row">
+            <div class="field"><label>Имя именинника</label><input id="showHero"></div>
+            <div class="field" style="flex:0 0 5rem"><label>Возраст</label><input id="showAge" type="number" min="0" max="18"></div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <div>
+      <section class="panel">
+        <header><span id="icCheck"></span>Готовность к празднику</header>
+        <div class="body" id="readyBox"></div>
+      </section>
+
+      <section class="panel">
+        <header><span id="icEdit"></span><span id="editorTitle">Конкурс</span></header>
+        <div class="body" id="editor"></div>
+      </section>
+
+      <section class="panel">
+        <header><span id="icFile"></span>Медиа</header>
+        <div class="body">
+          <div class="drop-zone" id="dropZone">
+            Перетащи сюда фото, видео или аудио — или
+            <button class="a-btn a-btn--sm" id="btnPickFile">выбери файл</button>
+            <div class="upload-bar" id="uploadBar"><span></span></div>
+          </div>
+          <div class="media-list" id="mediaList"></div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <div class="picker-back" id="pickerBack">
+    <div class="picker">
+      <header>
+        <span id="pickerTitle">Выбор картинки</span>
+        <span class="spacer"></span>
+        <button class="a-btn a-btn--sm" id="pickerClose">Закрыть</button>
+      </header>
+      <div class="search"><input id="pickerSearch" placeholder="Поиск по названию…"></div>
+      <div class="grid" id="pickerGrid"></div>
+    </div>
+  </div>
+
+  <input type="file" id="fileInput" hidden multiple accept="image/*,video/*,audio/*">
+  <input type="file" id="importInput" hidden accept="application/json,.json">
+
+  <script type="module" src="js/admin.js"></script>
+</body>
+</html>

@@ -1,0 +1,126 @@
+import { optionsHtml, counterHtml, noteHtml, esc, LETTERS } from '../util.js';
+import { icon } from '../icons.js';
+
+function correctText(item) {
+  const opts = item.options || [];
+  if (Number.isInteger(item.answer) && opts[item.answer]) {
+    const o = opts[item.answer];
+    return `${LETTERS[item.answer] || ''} — ${typeof o === 'string' ? o : o.text}`;
+  }
+  return (item.answerText || '').trim();
+}
+
+function seekTo(video, t) {
+  if (!video || !isFinite(t)) return;
+  const go = () => { try { video.currentTime = t; } catch (e) { /* ещё не готово */ } };
+  if (video.readyState >= 1) go();
+  else video.addEventListener('loadedmetadata', go, { once: true });
+}
+
+export default {
+  id: 'videoChoice',
+  accent: '#15918D',
+  label: 'Выбор на видео',
+  icon: 'clapper',
+  editor: { options: true, contestVideo: true, marks: true },
+
+  newItem() {
+    return {
+      id: '',
+      q: 'Что выберет Тимоша?',
+      options: [{ text: 'Вариант А', icon: '' }, { text: 'Вариант Б', icon: '' }],
+      answer: null,
+      answerNote: '',
+      at: 0,
+      revealEnd: 0
+    };
+  },
+
+  mount(root, ctx) {
+    const { contest, item, phase } = ctx;
+    const key = contest.id + '/' + item.id + '/' + (contest.video || '');
+    const revealed = phase === 'reveal';
+
+    if (root.dataset.vkey !== key) {
+      root.dataset.vkey = key;
+      root.innerHTML = `
+        ${counterHtml(ctx)}
+        <div class="question question--sm">${esc(item.q || 'Что выберет Тимоша?')}</div>
+        ${contest.video
+          ? `<div class="video-wrap"><video preload="auto" playsinline src="${esc(contest.video)}"></video>
+               <div class="video-badge">${icon('clapper')} Тимоша на арене</div></div>`
+          : '<div class="media-missing">Видео ещё не загружено — добавь его в кабинете</div>'}
+        <div class="js-options"></div>
+        <div class="js-extra"></div>`;
+      const v = root.querySelector('video');
+      if (v) {
+        v.muted = false;
+        v.addEventListener('timeupdate', () => {
+          if (v._stopAt && v.currentTime >= v._stopAt) {
+            v._stopAt = 0;
+            v.pause();
+          }
+        });
+      }
+    }
+
+    const optionsBox = root.querySelector('.js-options');
+    if (optionsBox) optionsBox.innerHTML = optionsHtml(item.options, item.answer, revealed);
+    const extra = root.querySelector('.js-extra');
+    if (extra) {
+      extra.innerHTML = revealed
+        ? (Number.isInteger(item.answer) ? '' : '<div class="answer-empty">Отметь в кабинете, что выбрал Тимоша</div>') + noteHtml(item)
+        : '';
+    }
+
+    const v = root.querySelector('video');
+    if (!v) return;
+    const at = Number(item.at) || 0;
+
+    if (!revealed) {
+      // Ждём на метке выбора: замерли и не двигаемся.
+      v._stopAt = 0;
+      if (v._phase !== 'q' + key) {
+        v._phase = 'q' + key;
+        v.pause();
+        seekTo(v, at);
+      }
+    } else if (v._phase !== 'r' + key) {
+      v._phase = 'r' + key;
+      const end = Number(item.revealEnd) || 0;
+      v._stopAt = end > at ? end : at + 6;
+      seekTo(v, at);
+      const p = v.play();
+      if (p && p.catch) p.catch(() => { /* браузер ещё не разрешил звук */ });
+    }
+  },
+
+  lion(ctx) {
+    return ctx.phase === 'reveal'
+      ? 'Вот это выбор! Кто угадал — тому звёздочка.'
+      : 'Тс-с-с! Не подсказывайте маэстро.';
+  },
+
+  remote(ctx) {
+    const answer = correctText(ctx.item);
+    const at = Number(ctx.item.at) || 0;
+    return `
+      <div class="r-question">${esc(ctx.item.q || 'Что выберет Тимоша?')}</div>
+      <div class="r-answer ${answer ? '' : 'is-empty'}">
+        <span class="r-answer-label">Тимоша выбрал</span>
+        <span class="r-answer-text">${answer ? esc(answer) : 'не заполнено'}</span>
+      </div>
+      <div class="r-note">Пауза на ${at.toFixed(1)} сек${ctx.item.revealEnd ? `, доигрываем до ${Number(ctx.item.revealEnd).toFixed(1)} сек` : ''}</div>
+      ${ctx.item.answerNote ? `<div class="r-note">${esc(ctx.item.answerNote)}</div>` : ''}
+      <div class="r-media-controls">
+        <button class="btn btn--ghost" data-media="back">${icon('rewind')} −2 сек</button>
+        <button class="btn btn--ghost" data-media="play">${icon('play')} Играть</button>
+        <button class="btn btn--ghost" data-media="pause">${icon('pause')} Пауза</button>
+        <button class="btn btn--ghost" data-media="fwd">${icon('forward')} +2 сек</button>
+        <button class="btn btn--ghost" data-media="mark">${icon('restart')} На метку</button>
+      </div>
+    `;
+  },
+
+  correctText
+};

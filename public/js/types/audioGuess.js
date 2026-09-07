@@ -1,0 +1,67 @@
+import { optionsHtml, answerHtml, noteHtml, counterHtml, esc, LETTERS } from '../util.js';
+import { icon } from '../icons.js';
+
+function correctText(item) {
+  const opts = item.options || [];
+  if (Number.isInteger(item.answer) && opts[item.answer]) {
+    const o = opts[item.answer];
+    return `${LETTERS[item.answer] || ''} — ${typeof o === 'string' ? o : o.text}`;
+  }
+  return (item.answerText || '').trim();
+}
+
+export default {
+  id: 'audioGuess',
+  accent: '#9B6BFF',
+  label: 'Угадай мелодию',
+  icon: 'music',
+  editor: { options: true, media: 'audio', openAnswer: true },
+
+  newItem() {
+    return { id: '', q: 'Что за песенка?', audio: '', options: [], answer: null, answerText: '', answerNote: '' };
+  },
+
+  mount(root, ctx) {
+    const { item, phase } = ctx;
+    const revealed = phase === 'reveal';
+    const key = item.id + '/' + (item.audio || '');
+    if (root.dataset.akey !== key) {
+      root.dataset.akey = key;
+      root.innerHTML = `
+        ${counterHtml(ctx)}
+        <div class="question">${esc(item.q || 'Что за песенка?')}</div>
+        ${item.audio
+          ? `<div class="equalizer">${Array.from({ length: 22 }, (_, i) => `<span style="animation-delay:${(i * 0.09).toFixed(2)}s"></span>`).join('')}
+             <audio preload="auto" src="${esc(item.audio)}"></audio></div>`
+          : '<div class="media-missing">Аудио ещё не загружено — добавь его в кабинете</div>'}
+        <div class="js-options"></div>
+        <div class="js-extra"></div>`;
+    }
+    const box = root.querySelector('.js-options');
+    if (box) box.innerHTML = optionsHtml(item.options, item.answer, revealed);
+    const extra = root.querySelector('.js-extra');
+    if (extra) extra.innerHTML = revealed ? answerHtml(item, item.options) + noteHtml(item) : '';
+
+    const audio = root.querySelector('audio');
+    if (audio) root.classList.toggle('is-playing', !audio.paused);
+  },
+
+  remote(ctx) {
+    const answer = correctText(ctx.item);
+    return `
+      <div class="r-question">${esc(ctx.item.q || 'Что за песенка?')}</div>
+      <div class="r-answer ${answer ? '' : 'is-empty'}">
+        <span class="r-answer-label">Правильный ответ</span>
+        <span class="r-answer-text">${answer ? esc(answer) : 'не заполнен'}</span>
+      </div>
+      ${ctx.item.answerNote ? `<div class="r-note">${esc(ctx.item.answerNote)}</div>` : ''}
+      <div class="r-media-controls">
+        <button class="btn btn--ghost" data-media="play">${icon('play')} Играть</button>
+        <button class="btn btn--ghost" data-media="pause">${icon('pause')} Пауза</button>
+        <button class="btn btn--ghost" data-media="restart">${icon('restart')} Сначала</button>
+      </div>
+    `;
+  },
+
+  correctText
+};

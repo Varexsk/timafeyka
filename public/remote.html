@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#FFF6E5">
+  <title>Пульт ведущего · Цирк Тимоши</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/theme.css">
+  <link rel="stylesheet" href="css/remote.css">
+</head>
+<body class="remote">
+  <div class="r-top">
+    <span class="logo" id="topLogo"></span>
+    <div class="who">
+      <div class="title" id="topTitle">Пульт ведущего</div>
+      <div class="sub" id="topSub">подключаюсь…</div>
+    </div>
+    <div class="dot" id="dot"></div>
+  </div>
+
+  <div class="rehearsal-bar">
+    <span>Идёт репетиция — баллы вернутся назад</span>
+    <button class="btn btn--ghost" id="stopRehearsal">Закончить</button>
+  </div>
+
+  <div class="r-phase" id="phaseRow">
+    <span data-phase="intro">Афиша</span>
+    <span data-phase="question">Вопрос</span>
+    <span data-phase="reveal">Ответ</span>
+  </div>
+
+  <div class="card" id="cardNow">
+    <h3>Сейчас на экране</h3>
+    <div id="nowBody"></div>
+    <div class="item-dots" id="itemDots"></div>
+  </div>
+
+  <div class="card">
+    <h3 id="scoreTitle">Баллы семьям</h3>
+    <div id="guestRows"></div>
+    <div class="say-row" style="margin-top:.6rem">
+      <input id="newGuest" placeholder="Имя нового гостя" autocomplete="off">
+      <button class="btn" id="addGuest">Добавить</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Быстрые действия</h3>
+    <div class="quick" id="quickBox"></div>
+    <div class="say-row" style="margin-top:.6rem">
+      <input id="sayText" placeholder="Что скажет Лёва?" autocomplete="off">
+      <button class="btn btn--teal" id="sayBtn">Сказать</button>
+    </div>
+    <button class="btn btn--ghost btn--wide" id="sayClear" style="margin-top:.4rem">Вернуть Лёве свои реплики</button>
+  </div>
+
+  <div class="card">
+    <h3>Перейти к конкурсу</h3>
+    <div class="jump-list" id="jumpList"></div>
+    <div style="display:flex;gap:.4rem;margin-top:.6rem">
+      <button class="btn btn--primary" id="toFinale" style="flex:1">Финал</button>
+      <button class="btn btn--yellow" id="toDiploma" style="flex:1">Диплом</button>
+    </div>
+    <button class="btn btn--purple btn--wide" id="startRehearsal" style="margin-top:.4rem">Включить репетицию</button>
+  </div>
+
+  <div class="r-bar">
+    <button class="btn btn--ghost" id="btnPrev">Назад</button>
+    <button class="btn" id="btnReveal">Ответ</button>
+    <button class="btn btn--primary btn--next" id="btnNext">Дальше</button>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script type="module" src="js/remote.js"></script>
+</body>
+</html>

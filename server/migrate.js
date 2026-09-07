@@ -1,0 +1,55 @@
+'use strict';
+
+// Разовый перевод старых данных на новые поля: у гостей emoji -> avatar,
+// у вариантов ответа emoji -> icon. Нужен только тем, кто успел поработать
+// в кабинете до редизайна; на свежих данных ничего не делает.
+
+const GUEST = {
+  '\u{1F418}': 'elephant', '\u{1F43B}': 'bear', '\u{1F43C}': 'panda', '\u{1F98A}': 'fox',
+  '\u{1F42F}': 'tiger', '\u{1F993}': 'zebra', '\u{1F435}': 'monkey', '\u{1F9AD}': 'seal',
+  '\u{1F992}': 'giraffe', '\u{1F429}': 'poodle', '\u{1F99D}': 'raccoon', '\u{1F99C}': 'parrot',
+  '\u{1F43F}️': 'monkey', '\u{1F98C}': 'giraffe', '\u{1F428}': 'bear', '\u{1F994}': 'raccoon'
+};
+
+const ART = {
+  '\u{1F319}': 'moon', '\u{1F305}': 'sunrise', '☀️': 'sun', '\u{1F306}': 'evening',
+  '⚖️': 'scales', '\u{1F4CF}': 'ruler',
+  '1️⃣': 'num-1', '2️⃣': 'num-2', '3️⃣': 'num-3', '4️⃣': 'num-4',
+  '5️⃣': 'num-5', '6️⃣': 'num-6', '7️⃣': 'num-7',
+  '\u{1F463}': 'footprints', '\u{1F41B}': 'crawling', '\u{1F9B7}': 'tooth',
+  '\u{1F469}': 'mom', '\u{1F468}': 'dad', '\u{1F476}': 'baby', '\u{1F91D}': 'both',
+  '\u{1F9F8}': 'teddy', '\u{1F4F1}': 'phone', '\u{1F34C}': 'banana', '\u{1F36A}': 'cookie',
+  '\u{1F50A}': 'speaker', '\u{1F6B6}': 'walking', '\u{1F697}': 'car', '\u{1FA86}': 'doll',
+  '\u{1F963}': 'bowl', '\u{1F955}': 'carrot'
+};
+
+const ANIMALS = ['elephant', 'bear', 'panda', 'fox', 'tiger', 'zebra',
+  'monkey', 'seal', 'giraffe', 'poodle', 'raccoon', 'parrot'];
+
+function migrateGuests(list) {
+  let changed = false;
+  (list || []).forEach((g, i) => {
+    if (g.avatar) return;
+    g.avatar = GUEST[g.emoji] || ANIMALS[i % ANIMALS.length];
+    delete g.emoji;
+    changed = true;
+  });
+  return changed;
+}
+
+function migrateShow(show) {
+  let changed = false;
+  for (const contest of (show && show.contests) || []) {
+    for (const item of contest.items || []) {
+      for (const opt of item.options || []) {
+        if (!opt || opt.icon !== undefined || opt.emoji === undefined) continue;
+        opt.icon = ART[opt.emoji] || '';
+        delete opt.emoji;
+        changed = true;
+      }
+    }
+  }
+  return changed;
+}
+
+module.exports = { migrateGuests, migrateShow };

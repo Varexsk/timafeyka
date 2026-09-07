@@ -1,0 +1,226 @@
+/* Пульт ведущего — телефон в руке: светло, крупно, палец достаёт до низа. */
+
+html { font-size: 17px; }
+
+body.remote {
+  background: var(--cream);
+  min-height: 100vh;
+  padding: 0.7rem 0.7rem 9.5rem;
+  max-width: 40rem;
+  margin: 0 auto;
+  color: var(--ink);
+}
+
+.r-top {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.2rem 0.2rem 0.7rem;
+}
+.r-top .logo { width: 2.4rem; height: 2.4rem; color: var(--red); flex: 0 0 auto; }
+.r-top .logo .ic { width: 100%; height: 100%; }
+.r-top .who { flex: 1; min-width: 0; }
+.r-top .title {
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  color: var(--red);
+  line-height: 1.1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.r-top .sub { font-size: 0.85rem; color: var(--ink-soft); font-weight: 700; }
+.dot { width: 0.7rem; height: 0.7rem; border-radius: 50%; background: var(--green); flex: 0 0 auto; }
+body.is-offline .dot { background: var(--red); }
+
+.rehearsal-bar {
+  display: none;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--purple);
+  color: #fff;
+  border-radius: 0.8rem;
+  padding: 0.55rem 0.8rem;
+  font-weight: 900;
+  margin-bottom: 0.7rem;
+}
+body.is-rehearsal .rehearsal-bar { display: flex; }
+.rehearsal-bar .btn { margin-left: auto; padding: 0.35rem 0.7rem; font-size: 0.85rem; }
+
+.card {
+  background: var(--paper);
+  border: 0.14rem solid var(--ink);
+  border-radius: 1rem;
+  padding: 0.85rem;
+  margin-bottom: 0.7rem;
+  box-shadow: var(--sticker-sm);
+}
+.card h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--font-slab);
+  font-size: 0.85rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--red);
+  margin-bottom: 0.6rem;
+}
+
+.r-phase { display: flex; gap: 0.35rem; margin-bottom: 0.7rem; }
+.r-phase span {
+  flex: 1;
+  text-align: center;
+  padding: 0.4rem;
+  border-radius: 0.6rem;
+  font-size: 0.8rem;
+  font-weight: 900;
+  background: rgba(58, 35, 80, 0.07);
+  color: var(--ink-soft);
+}
+.r-phase span.is-on { background: var(--purple); color: #fff; }
+
+.r-question { font-size: 1.3rem; font-weight: 900; line-height: 1.2; margin-bottom: 0.6rem; }
+.r-answer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  background: var(--yellow);
+  border: 0.12rem solid var(--yellow-deep);
+  color: var(--ink);
+  border-radius: 0.8rem;
+  padding: 0.55rem 0.8rem;
+  margin-bottom: 0.5rem;
+}
+.r-answer.is-empty { background: #fff; border: 0.12rem dashed var(--red); color: var(--red); }
+.r-answer-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.14em; opacity: 0.7; }
+.r-answer-text { font-size: 1.2rem; font-weight: 900; line-height: 1.2; }
+.r-note { font-size: 0.92rem; color: var(--ink-soft); font-weight: 700; margin-bottom: 0.4rem; }
+.r-thumb {
+  width: 100%;
+  max-height: 11rem;
+  object-fit: contain;
+  border-radius: 0.6rem;
+  margin-bottom: 0.5rem;
+  background: var(--cream-2);
+}
+.r-media-controls { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.5rem; }
+.r-media-controls .btn { flex: 1 1 30%; font-size: 0.88rem; padding: 0.55rem 0.4rem; }
+
+.g-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0;
+  border-bottom: 0.06rem solid var(--line);
+}
+.g-row:last-child { border-bottom: 0; }
+.g-row .av {
+  width: 2.6rem;
+  height: 2.6rem;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 0.14rem solid var(--c, var(--ink));
+  flex: 0 0 auto;
+}
+.g-row .nm { flex: 1; font-weight: 900; font-size: 1.05rem; }
+.g-row .pt {
+  font-family: var(--font-slab);
+  font-size: 1.3rem;
+  color: var(--orange-deep);
+  min-width: 1.8rem;
+  text-align: center;
+}
+.g-row .btn { padding: 0.5rem 0.75rem; }
+
+.quick { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.4rem; }
+.quick .btn { flex-direction: column; gap: 0.2rem; font-size: 0.82rem; padding: 0.55rem 0.2rem; }
+.quick .btn .ic { width: 1.5rem; height: 1.5rem; }
+
+.jump-list { display: flex; flex-direction: column; gap: 0.35rem; }
+.jump-item {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.55rem 0.7rem;
+  border-radius: 0.7rem;
+  background: rgba(58, 35, 80, 0.05);
+  border: 0.12rem solid transparent;
+  font-weight: 800;
+  cursor: pointer;
+}
+.jump-item.is-current { border-color: var(--red); background: rgba(230, 57, 70, 0.1); }
+.jump-item .ic { width: 1.3rem; height: 1.3rem; color: var(--red); }
+.jump-item .nm { flex: 1; }
+.jump-item .cnt { font-size: 0.8rem; color: var(--ink-soft); }
+
+.item-dots { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-top: 0.6rem; }
+.item-dots button {
+  width: 2.1rem;
+  height: 2.1rem;
+  border-radius: 0.5rem;
+  border: 0.12rem solid var(--line);
+  background: #fff;
+  color: var(--ink);
+  font-weight: 900;
+  font-size: 0.85rem;
+}
+.item-dots button.is-on { background: var(--purple); border-color: var(--purple-deep); color: #fff; }
+.item-dots button.is-done { opacity: 0.45; }
+
+.say-row { display: flex; gap: 0.4rem; }
+.say-row input { flex: 1; }
+
+.r-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.7rem 0.7rem calc(0.7rem + env(safe-area-inset-bottom));
+  background: linear-gradient(rgba(255, 246, 229, 0), var(--cream) 30%);
+  max-width: 40rem;
+  margin: 0 auto;
+}
+.r-bar .btn { flex: 1; font-size: 1rem; padding: 1rem 0.4rem; }
+.r-bar .btn--next { flex: 1.5; }
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 7.5rem;
+  transform: translateX(-50%) translateY(1rem);
+  background: var(--ink);
+  color: #fff;
+  font-weight: 900;
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  opacity: 0;
+  transition: opacity 0.2s, transform 0.2s;
+  pointer-events: none;
+  z-index: 50;
+}
+.toast.is-on { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ——— ставки ——— */
+
+.bet-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.3rem 0;
+}
+.bet-row .nm { flex: 1; font-weight: 800; font-size: 1rem; }
+.bet-row .bet-in { width: 7rem; flex: 0 0 auto; text-align: center; font-weight: 900; font-size: 1.05rem; }
+.owner-av {
+  width: 2.4rem;
+  height: 2.4rem;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 0.14rem solid var(--c, var(--ink));
+  background: #fff;
+  flex: 0 0 auto;
+  display: block;
+}
+.av-fallback { display: grid; place-items: center; width: 100%; height: 100%; }
