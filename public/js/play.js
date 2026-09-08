@@ -22,6 +22,21 @@ let state = null;
 let me = restore();
 let joined = false;
 
+// Задержка до сервера. Нужна честной жужжалке: у кого-то Wi-Fi лучше,
+// и сервер вычитает половину этого числа из времени нажатия.
+let rtt = 0;
+
+function ping() {
+  const started = Date.now();
+  fetch('/api/ping')
+    .then((r) => r.json())
+    .then(() => {
+      const sample = Date.now() - started;
+      rtt = rtt ? Math.round(rtt * 0.7 + sample * 0.3) : sample;
+    })
+    .catch(() => { /* сеть моргнула — попробуем через пять секунд */ });
+}
+
 // ——— кто я ———
 
 function restore() {
@@ -140,6 +155,42 @@ function renderWaiting(text, hint) {
     </div>`;
 }
 
+// Пока жужжалка открыта, она важнее всего остального на экране.
+function renderBuzzer(ctx, b) {
+  const order = b.order || [];
+  const at = order.findIndex((x) => x.ownerId === me.ownerId);
+  const blocked = (b.falseStart || 0) > Date.now();
+
+  if (at === 0) {
+    return `<div class="p-card">
+        <div class="p-place">1</div>
+        <div class="p-title" style="text-align:center">Вы первые!</div>
+        <div class="p-hint" style="text-align:center">Отвечайте вслух — ведущий слушает.</div>
+      </div>`;
+  }
+  if (at > 0) {
+    return `<div class="p-card">
+        <div class="p-place">${at + 1}</div>
+        <div class="p-title" style="text-align:center">Вы ${at + 1}-е в очереди</div>
+        <div class="p-hint" style="text-align:center">Если предыдущие ошибутся — очередь дойдёт до вас.</div>
+      </div>`;
+  }
+  if (blocked) {
+    return `<div class="p-card">
+        <div class="p-title" style="text-align:center">Фальстарт!</div>
+        <div class="p-hint" style="text-align:center">Нажали до сигнала. Пара секунд — и можно снова.</div>
+      </div>`;
+  }
+  if (!b.open) {
+    return `<div class="p-card">
+        <div class="p-title" style="text-align:center">В этот раз не успели</div>
+        <div class="p-hint" style="text-align:center">Ждём следующий вопрос.</div>
+      </div>`;
+  }
+  return `${ctx.item ? `<div class="p-question">${esc(ctx.item.q || '')}</div>` : ''}
+    <button class="p-buzz" data-buzz="1">ЖМИ!</button>`;
+}
+
 function renderChoice(ctx) {
   const opts = (ctx.item.options || []);
   const round = ctx.round || {};
@@ -171,6 +222,19 @@ function renderChoice(ctx) {
   }).join('')}
     </div>
     ${revealed ? revealHint(ctx, mine === correct) : answeredHint(round, mine !== undefined)}
+  `;
+}
+
+function renderText(ctx) {
+  const round = ctx.round || {};
+  const mine = round.mine === undefined ? '' : String(round.mine);
+  const vote = voteDecl(ctx.type) || {};
+  return `
+    <div class="p-question">${esc(ctx.item.q || '')}</div>
+    <textarea class="p-text" id="textIn" rows="4"
+      placeholder="${esc(vote.placeholder || 'Напиши тут…')}">${esc(mine)}</textarea>
+    <button class="p-big" data-send="text">Отправить</button>
+    ${mine ? '<div class="p-hint">Уже отправлено. Можно переписать и отправить снова.</div>' : ''}
   `;
 }
 
@@ -250,12 +314,19 @@ function renderPlay() {
       <div class="p-hint">Приготовься — сейчас будет вопрос.</div>`;
   }
 
+  // Жужжалка работает поверх любого формата — её открывает ведущий.
+  const b = (ctx.round && ctx.round.buzz) || null;
+  if (b && (b.open || (b.order || []).length || (b.falseStart || 0) > Date.now())) {
+    return renderBuzzer(ctx, b);
+  }
+
   const vote = voteDecl(ctx.type);
   if (!vote) {
     return renderWaiting('Смотри на большой экран',
       'В этом номере с телефона отвечать не нужно.');
   }
   if (vote.kind === 'number') return renderNumber(ctx);
+  if (vote.kind === 'text') return renderText(ctx);
   if (vote.kind === 'choice') return renderChoice(ctx);
   return renderWaiting('Смотри на большой экран', '');
 }
@@ -335,13 +406,32 @@ document.body.addEventListener('click', (e) => {
     return;
   }
 
+  const bz = e.target.closest('[data-buzz]');
+  if (bz) {
+    buzz(35);
+    bus.send('buzz', { playerId: me.playerId, ownerId: me.ownerId, rtt });
+    return;
+  }
+
   const send = e.target.closest('[data-send]');
-  if (send && send.dataset.send === 'number') {
+  if (!send) return;
+
+  if (send.dataset.send === 'number') {
     const input = $('numIn');
     if (!input || input.value === '') { toast('Впиши число'); return; }
     buzz(18);
     sendVote(input.value);
     toast('Ставка принята!');
+    return;
+  }
+
+  if (send.dataset.send === 'text') {
+    const input = $('textIn');
+    const text = input ? input.value.trim() : '';
+    if (!text) { toast('Сначала напиши'); return; }
+    buzz(18);
+    sendVote(text);
+    toast('Отправлено!');
   }
 });
 
@@ -358,7 +448,15 @@ bus.onState((next) => {
 connect();
 
 // Цифра таймера должна тикать и без новых кадров с сервера.
-setInterval(renderTimer, 250);
+// Заодно снимаем фальстарт, когда его пара секунд истекла.
+setInterval(() => {
+  renderTimer();
+  const b = state && state.runtime && state.runtime.round && state.runtime.round.buzz;
+  if (b && (b.falseStart || 0) > Date.now() - 400) render();
+}, 250);
+
+ping();
+setInterval(ping, 5000);
 
 // Уходя со страницы, отвязываем телефон — иначе список игроков зарастёт.
 window.addEventListener('pagehide', () => {

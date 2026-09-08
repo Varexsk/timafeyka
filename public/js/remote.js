@@ -58,6 +58,37 @@ function guestAvatar(g) {
   return `<span class="av" style="--c:${esc(g.color || 'var(--ink)')}">${inner}</span>`;
 }
 
+// ——— жужжалка ———
+
+function renderBuzz() {
+  const bar = $('buzzBar');
+  if (!bar || !state) return;
+  const ctx = ctxNow();
+  if (state.runtime.screen !== 'show' || !ctx.contest || !ctx.item) { bar.innerHTML = ''; return; }
+
+  const b = (ctx.round && ctx.round.buzz) || null;
+  const order = (b && b.order) || [];
+  const pts = pointsOf(ctx.contest);
+
+  if (!b || (!b.open && !order.length)) {
+    bar.innerHTML = `<span class="grow">Жужжалка</span>
+      <button class="btn btn--primary" data-buzz="arm">${icon('alert')} Дать сигнал</button>`;
+    return;
+  }
+
+  if (!order.length) {
+    bar.innerHTML = `<span class="grow">Ждём нажатия…</span>
+      <button class="btn btn--ghost" data-buzz="clear">${icon('cross')} Отменить</button>`;
+    return;
+  }
+
+  const first = ctx.owners.find((o) => o.id === order[0].ownerId);
+  bar.innerHTML = `<span class="grow">Первый: <b>${esc(first ? first.name : '—')}</b>${order.length > 1 ? ` · в очереди ещё ${order.length - 1}` : ''}</span>
+    <button class="btn btn--primary" data-buzz="correct">Верно +${pts}</button>
+    <button class="btn btn--ghost" data-buzz="miss">Мимо</button>
+    <button class="btn btn--ghost" data-buzz="clear">${icon('refresh')}</button>`;
+}
+
 // ——— таймер ———
 
 // Разметку пересобираем, только когда меняется сам вид полосы: цифра тикает
@@ -133,6 +164,7 @@ function render() {
 
   document.body.classList.toggle('is-rehearsal', !!r.rehearsal);
   renderTimer();
+  renderBuzz();
 
   $('topTitle').textContent = r.screen === 'show' && ctx.contest ? ctx.contest.title : SCREEN_NAMES[r.screen] || 'Показ';
   $('topSub').textContent = r.screen === 'show' && ctx.contest
@@ -260,6 +292,17 @@ function wire() {
       toast(delta > 0 ? 'Плюс балл!' : 'Минус балл');
       return;
     }
+    const bz = e.target.closest('[data-buzz]');
+    if (bz) {
+      buzz();
+      const act = bz.dataset.buzz;
+      if (act === 'arm') { bus.send('armBuzz', { on: true }); toast('Жужжалка открыта!'); }
+      else if (act === 'correct') { bus.send('buzzCorrect'); toast('Балл засчитан'); }
+      else if (act === 'miss') { bus.send('buzzMiss'); toast('Следующий!'); }
+      else if (act === 'clear') { bus.send('clearBuzz'); toast('Жужжалка убрана'); }
+      return;
+    }
+
     const tm = e.target.closest('[data-timer]');
     if (tm) {
       buzz();

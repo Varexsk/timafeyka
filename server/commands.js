@@ -245,6 +245,35 @@ function settleRound() {
   return applyAward(winners.map((id) => ({ id, delta })), contest.title, roundKey(contest, item));
 }
 
+// ——— жужжалка ———
+//
+// «Кто первый» решает сервер по времени прихода команды. Wi-Fi у всех разный,
+// поэтому вычитаем половину пинга телефона — и не больше 150 мс, чтобы нельзя
+// было «выиграть», приписав себе задержку.
+//
+// Нажатия в первые 150 мс считаются одновременными: внутри окна очередь
+// пересортировывается, после — замерзает. Человек 150 мс не различает, а
+// разброс домашней сети укладывается в них целиком.
+
+const BUZZ_WINDOW = 150;
+const FALSE_START_PAUSE = 2000;
+
+function buzzOf(round) {
+  if (!round.buzz) round.buzz = { open: false, locked: false, order: [], falseStart: {}, freezeAt: 0 };
+  return round.buzz;
+}
+
+function freezeLater(key) {
+  setTimeout(() => {
+    const round = (store.runtime.rounds || {})[key];
+    if (!round || !round.buzz) return;
+    round.buzz.order.sort((a, b) => a.at - b.at);
+    round.buzz.frozen = true;
+    store.touch('runtime');
+    store.emit();
+  }, BUZZ_WINDOW + 10);
+}
+
 // ——— таймер ———
 //
 // Сервер не тикает. Он хранит момент, когда время выйдет, а считают все
@@ -480,8 +509,21 @@ const handlers = {
     if (!contest || !item || !ownerId) return [];
     const round = roundAt(roundKey(contest, item), true);
 
-    if (value === '' || value === null || value === undefined) delete round.votes[ownerId];
-    else round.votes[ownerId] = { v: Number.isNaN(Number(value)) ? value : Number(value), at: Date.now() };
+    if (value === '' || value === null || value === undefined) {
+      delete round.votes[ownerId];
+      return ['runtime'];
+    }
+
+    // Каким должен быть ответ, знает формат: число, номер варианта или текст.
+    // Раньше сервер угадывал это по самому значению — и «7 лет» становилось
+    // числом, а «7» из текстового ответа теряло смысл.
+    const decl = types.get(contest.type);
+    const kind = ((decl && decl.participation && decl.participation.vote) || {}).kind;
+    round.votes[ownerId] = {
+      v: kind === 'text' ? String(value).slice(0, 300) : Number(value),
+      at: Date.now()
+    };
+    return ['runtime'];
     return ['runtime'];
   },
 
@@ -498,6 +540,7 @@ const handlers = {
     if (!round) return [];
     round.votes = {};
     round.awarded = false;
+    round.buzz = { open: false, locked: false, order: [], falseStart: {}, freezeAt: 0 };
     round.gen = (round.gen || 0) + 1;
     return ['runtime'];
   },
@@ -597,6 +640,82 @@ const handlers = {
     r.phase = snap.phase;
     r.rehearsal = null;
     return ['runtime', 'guests'];
+  },
+
+  // ——— жужжалка ———
+
+  // Дать сигнал: с этой секунды нажатия считаются.
+  armBuzz({ on }) {
+    const round = roundAt(roundKey(currentContest(), currentItem()), true);
+    if (!round) return [];
+    const b = buzzOf(round);
+    b.open = on !== false;
+    if (b.open) {
+      b.locked = false;
+      b.order = [];
+      b.freezeAt = 0;
+      b.frozen = false;
+    }
+    return ['runtime'];
+  },
+
+  buzz({ playerId, ownerId, rtt }) {
+    const round = roundAt(roundKey(currentContest(), currentItem()), true);
+    if (!round) return [];
+    const b = buzzOf(round);
+
+    const player = store.play.players[playerId];
+    const owner = findOwner(ownerId || (player && player.ownerId));
+    if (!owner) return [];
+
+    const now = Date.now();
+
+    // Нажали до сигнала — фальстарт: две секунды кнопка не слушается.
+    if (!b.open || b.locked) {
+      b.falseStart[owner.id] = now + FALSE_START_PAUSE;
+      return ['runtime'];
+    }
+    if (now < (b.falseStart[owner.id] || 0)) return [];
+    // Из семьи в очередь попадает один — второй телефон ничего не меняет.
+    if (b.order.some((x) => x.ownerId === owner.id)) return [];
+
+    const lag = Math.min(300, Math.max(0, Number(rtt) || 0)) / 2;
+    b.order.push({ ownerId: owner.id, playerId: playerId || '', at: now - lag, raw: now });
+
+    if (!b.freezeAt) {
+      b.freezeAt = now + BUZZ_WINDOW;
+      freezeLater(roundKey(currentContest(), currentItem()));
+    }
+    return ['runtime'];
+  },
+
+  // Ведущий подтвердил ответ первого в очереди.
+  buzzCorrect() {
+    const contest = currentContest();
+    const round = roundAt(roundKey(contest, currentItem()), false);
+    if (!round || !round.buzz || !round.buzz.order.length) return [];
+    const first = round.buzz.order[0];
+    round.buzz.locked = true;
+    round.buzz.open = false;
+    return ['runtime'].concat(
+      applyAward([{ id: first.ownerId, delta: pointsFor(contest) }],
+        contest.title, roundKey(contest, currentItem()))
+    );
+  },
+
+  // Не угадал — очередь двигается к следующему.
+  buzzMiss() {
+    const round = roundAt(roundKey(currentContest(), currentItem()), false);
+    if (!round || !round.buzz || !round.buzz.order.length) return [];
+    round.buzz.order.shift();
+    return ['runtime'];
+  },
+
+  clearBuzz() {
+    const round = roundAt(roundKey(currentContest(), currentItem()), false);
+    if (!round || !round.buzz) return [];
+    round.buzz = { open: false, locked: false, order: [], falseStart: {}, freezeAt: 0 };
+    return ['runtime'];
   },
 
   // ——— таймер ———

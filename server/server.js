@@ -233,6 +233,9 @@ const server = http.createServer(async (req, res) => {
 
   if (pathname === '/api/media') { sendJson(res, 200, { files: listMedia() }); return; }
 
+  // Телефон меряет по нему задержку сети — она нужна честной жужжалке.
+  if (pathname === '/api/ping') { sendJson(res, 200, { now: Date.now() }); return; }
+
   // Список форматов конкурсов: только сервер умеет читать папку types/.
   if (pathname === '/api/types') { sendJson(res, 200, { types: types.list() }); return; }
 
@@ -338,6 +341,10 @@ function banner() {
 }
 
 // Форматы конкурсов читаются до старта: сервер должен знать, как считать баллы.
+// Изменения по таймеру (окно честности у жужжалки) рассылаем так же,
+// как обычные команды.
+store.onChange = scheduleBroadcast;
+
 types.load()
   .then(() => {
     store.load();

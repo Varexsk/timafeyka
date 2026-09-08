@@ -137,6 +137,19 @@
 .round-bar .rb-label { font-weight: 900; font-size: 1.05rem; color: var(--ink); }
 .round-bar .rb-count { font-family: var(--font-slab); color: var(--teal-deep); }
 
+.round-bar .rb-place {
+  width: 1.7rem;
+  height: 1.7rem;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--yellow);
+  border: 0.12rem solid var(--yellow-deep);
+  font-family: var(--font-slab);
+  font-size: 0.95rem;
+  margin-left: 0.35rem;
+}
+
 .round-bar .rb-dot {
   width: 2rem;
   height: 2rem;

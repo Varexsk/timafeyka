@@ -261,16 +261,38 @@ function chipAvatar(g) {
 function renderRoundBar(r, ctx) {
   const box = el.roundBar;
   const vote = ctx.type && ctx.type.participation && ctx.type.participation.vote;
-  const live = r.screen === 'show' && ctx.contest && ctx.item && ctx.playMode === 'phones' && vote;
+  const buzz = ctx.round && ctx.round.buzz;
+  const buzzing = !!(buzz && (buzz.open || (buzz.order && buzz.order.length)));
+  const live = r.screen === 'show' && ctx.contest && ctx.item
+    && (buzzing || (ctx.playMode === 'phones' && vote));
   if (!live) { box.hidden = true; return; }
   box.hidden = false;
+
+  // Жужжалка важнее счётчика: если она открыта, показываем очередь.
+  if (buzzing) {
+    const order = buzz.order || [];
+    if (!order.length) {
+      box.innerHTML = '<span class="rb-label">Жми жужжалку!</span>';
+      return;
+    }
+    const first = order[0];
+    box.innerHTML = '<span class="rb-label">Кто первый</span>' + order.map((x, i) => {
+      const o = ctx.owners.find((y) => y.id === x.ownerId);
+      if (!o) return '';
+      const gap = i === 0 ? '' : '+' + ((x.at - first.at) / 1000).toFixed(2).replace('.', ',') + ' с';
+      return `<span class="rb-place">${i + 1}</span>${dot(o, true)}`
+        + `<span class="rb-label">${esc(o.name)}</span>`
+        + (gap ? `<span class="rb-count">${gap}</span>` : '');
+    }).join('');
+    return;
+  }
 
   if (r.phase === 'reveal') {
     const award = (r.awardLog || []).filter((e) => e.roundKey === ctx.roundKey && !e.undone).pop();
     const ids = award ? award.entries.map((e) => e.id) : [];
     const winners = ctx.owners.filter((o) => ids.includes(o.id));
     box.innerHTML = winners.length
-      ? `<span class="rb-label">Угадали!</span>` + winners.map((o) => dot(o, true)).join('')
+      ? '<span class="rb-label">Угадали!</span>' + winners.map((o) => dot(o, true)).join('')
       + `<span class="rb-label">${winners.map((o) => esc(o.name)).join(', ')}</span>`
       : '<span class="rb-label">В этот раз не угадал никто</span>';
     return;

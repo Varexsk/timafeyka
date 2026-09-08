@@ -70,6 +70,18 @@ function playRound(round, ownerId, revealed) {
   // «вы не ответили» у того, кто честно ответил.
   if (ownerId && votes[ownerId] !== undefined) out.mine = votes[ownerId].v;
   if (revealed) out.votes = votes;
+
+  // Очередь жужжалки не секрет: наоборот, в ней весь смысл.
+  const b = round.buzz;
+  if (b) {
+    out.buzz = {
+      open: !!b.open,
+      locked: !!b.locked,
+      frozen: !!b.frozen,
+      order: (b.order || []).map((x) => ({ ownerId: x.ownerId, at: x.at })),
+      falseStart: ownerId ? (b.falseStart || {})[ownerId] || 0 : 0
+    };
+  }
   return out;
 }
 
