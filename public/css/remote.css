@@ -107,6 +107,31 @@ body.is-rehearsal .rehearsal-bar { display: flex; }
 .r-media-controls { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.5rem; }
 .r-media-controls .btn { flex: 1 1 30%; font-size: 0.88rem; padding: 0.55rem 0.4rem; }
 
+/* Таймер конкурса на пульте. */
+.r-timer:empty { display: none; }
+.r-timer {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin: 0 0.7rem 0.6rem;
+  padding: 0.5rem 0.7rem;
+  border: 0.1rem solid var(--stroke);
+  border-radius: var(--radius);
+  background: var(--sticker);
+}
+
+.r-timer .t-num {
+  font-family: var(--font-display);
+  font-size: 1.9rem;
+  min-width: 3.2rem;
+  color: var(--ink);
+}
+
+.r-timer.is-warn .t-num { color: var(--red); }
+.r-timer .btn { padding: 0.45rem 0.7rem; font-size: 0.88rem; }
+.r-timer .grow { flex: 1; }
+
 /* Что начислили последним — и кнопка это отменить. */
 .r-undo {
   display: flex;

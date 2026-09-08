@@ -245,6 +245,49 @@ function settleRound() {
   return applyAward(winners.map((id) => ({ id, delta })), contest.title);
 }
 
+// ——— таймер ———
+//
+// Сервер не тикает. Он хранит момент, когда время выйдет, а считают все
+// страницы сами — по часам сервера. Про истечение сообщает телевизор.
+
+function startTimer(seconds, onEnd, label) {
+  const r = store.runtime;
+  const secs = Math.max(1, Math.min(3600, Math.round(Number(seconds) || 60)));
+  r.timer = {
+    seconds: secs,
+    endsAt: Date.now() + secs * 1000,
+    leftPaused: 0,
+    running: true,
+    seq: (r.timer && r.timer.seq ? r.timer.seq : 0) + 1,
+    onEnd: ['stop', 'reveal', 'next'].includes(onEnd) ? onEnd : 'stop',
+    label: String(label || '').slice(0, 60),
+    contestId: r.contestId,
+    itemId: r.itemId
+  };
+  return ['runtime'];
+}
+
+// Формат может попросить таймер сам: «на этот вопрос — минута».
+// Число берётся либо из объявления, либо из поля вопроса, если там имя поля.
+function autoTimer() {
+  const r = store.runtime;
+  if (r.screen !== 'show' || r.phase !== 'question') return;
+  const contest = currentContest();
+  const item = currentItem();
+  if (!contest || !item) return;
+
+  const decl = types.get(contest.type);
+  const conf = decl && decl.timer;
+  if (!conf || conf.autoStart !== 'question') return;
+
+  const t = r.timer;
+  // Уже идёт на этом же вопросе — не перезапускаем.
+  if (t && t.contestId === contest.id && t.itemId === item.id) return;
+
+  const seconds = typeof conf.seconds === 'string' ? Number(item[conf.seconds]) : Number(conf.seconds);
+  startTimer(seconds, conf.onEnd, conf.label);
+}
+
 // ——— баллы ———
 
 // Единственное место, где меняется счёт. Пишем в журнал ровно те дельты,
@@ -287,8 +330,8 @@ function revertAward(entry) {
 // ——— команды ———
 
 const handlers = {
-  next() { next(); return ['runtime'].concat(settleRound()); },
-  prev() { prev(); return ['runtime']; },
+  next() { next(); autoTimer(); return ['runtime'].concat(settleRound()); },
+  prev() { prev(); autoTimer(); return ['runtime']; },
 
   goScreen({ screen }) {
     if (!SCREENS.includes(screen)) return [];
@@ -313,7 +356,8 @@ const handlers = {
     r.screen = 'show';
     const want = ['intro', 'question', 'reveal'].includes(phase) ? phase : 'question';
     setPos(contest, at, items.length ? want : 'intro');
-    return ['runtime'];
+    autoTimer();
+    return ['runtime'].concat(settleRound());
   },
 
   reveal({ on }) {
@@ -546,6 +590,68 @@ const handlers = {
     r.phase = snap.phase;
     r.rehearsal = null;
     return ['runtime', 'guests'];
+  },
+
+  // ——— таймер ———
+
+  timerStart({ seconds, onEnd, label }) {
+    return startTimer(seconds, onEnd, label);
+  },
+
+  timerPause() {
+    const t = store.runtime.timer;
+    if (!t || !t.running) return [];
+    t.leftPaused = Math.max(0, t.endsAt - Date.now());
+    t.running = false;
+    return ['runtime'];
+  },
+
+  timerResume() {
+    const t = store.runtime.timer;
+    if (!t || t.running) return [];
+    t.endsAt = Date.now() + (Number(t.leftPaused) || 0);
+    t.leftPaused = 0;
+    t.running = true;
+    return ['runtime'];
+  },
+
+  timerAdd({ seconds }) {
+    const t = store.runtime.timer;
+    if (!t) return [];
+    const add = (Number(seconds) || 0) * 1000;
+    if (t.running) t.endsAt = Math.max(Date.now(), t.endsAt + add);
+    else t.leftPaused = Math.max(0, (Number(t.leftPaused) || 0) + add);
+    // Кольцо на экране считает долю от исходного времени — растянем и его.
+    if (add > 0) t.seconds += Math.round(add / 1000);
+    return ['runtime'];
+  },
+
+  timerReset() {
+    if (!store.runtime.timer) return [];
+    store.runtime.timer = null;
+    return ['runtime'];
+  },
+
+  // Время вышло — об этом сообщает телевизор. Повтор с тем же номером
+  // запуска ничего не делает, поэтому второй экран не навредит.
+  timerDone({ seq }) {
+    const r = store.runtime;
+    const t = r.timer;
+    if (!t || !t.running || Number(seq) !== t.seq) return [];
+    t.running = false;
+    t.leftPaused = 0;
+    t.done = true;
+
+    if (t.onEnd === 'reveal' && r.screen === 'show' && r.phase === 'question') {
+      r.phase = 'reveal';
+      return ['runtime'].concat(settleRound());
+    }
+    if (t.onEnd === 'next') {
+      next();
+      autoTimer();
+      return ['runtime'].concat(settleRound());
+    }
+    return ['runtime'];
   },
 
   updateShow({ patch }) {

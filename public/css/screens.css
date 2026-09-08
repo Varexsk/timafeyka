@@ -113,6 +113,56 @@
   background: repeating-linear-gradient(135deg,
     var(--red) 0 1.1rem, #fff 1.1rem 2.2rem);
 }
+/* Таймер конкурса. Живёт вне #screen, поэтому переживает перерисовки сцены. */
+.timer-ring {
+  position: absolute;
+  /* Кулисы занимают по 7.5% с каждого края, слева стоит Лёва, внизу — плашки
+     с баллами. Свободный угол ровно один. */
+  right: calc(7.5% + 1.2rem);
+  bottom: 4.6rem;
+  width: 7.2rem;
+  height: 7.2rem;
+  display: grid;
+  place-items: center;
+  z-index: 6;
+}
+
+.timer-ring svg { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
+.timer-ring circle { fill: none; stroke-width: 8; stroke-linecap: round; }
+.timer-ring .t-track { stroke: rgba(58, 35, 80, 0.12); }
+.timer-ring .t-fill {
+  stroke: var(--teal-deep);
+  transition: stroke 0.3s;
+}
+
+.timer-ring .t-num {
+  font-family: var(--font-display);
+  font-size: 2.4rem;
+  color: var(--ink);
+  line-height: 1;
+}
+
+.timer-ring .t-label {
+  position: absolute;
+  bottom: 100%;
+  margin-bottom: 0.3rem;
+  font-size: 0.72rem;
+  font-weight: 900;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+
+.timer-ring.is-paused { opacity: 0.55; }
+.timer-ring.is-warn .t-fill { stroke: var(--red); }
+.timer-ring.is-warn .t-num { color: var(--red); animation: pulse 1s ease-in-out infinite; }
+.timer-ring.is-over .t-fill { stroke: var(--red); }
+.timer-ring.is-over .t-num { color: var(--red); }
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.14); }
+}
+
 /* «Ва-банк»: за номер дают больше баллов — это должно быть видно с дивана. */
 .poster-mult {
   display: inline-block;
@@ -610,7 +660,8 @@
   html { font-size: 15px; }
   body { background: #fff; }
   .tent, .garland, .curtain, .ring, .sky, .lion-wrap, .scorebar, #confetti,
-  .offline, .sound-nudge, .tv-panel, .rehearsal-badge, .balloon { display: none !important; }
+  .offline, .sound-nudge, .tv-panel, .rehearsal-badge, .balloon,
+  .timer-ring { display: none !important; }
   .stage { position: static; background: #fff; overflow: visible; }
   .screen { position: static; inset: auto; padding: 0; gap: 0.6rem; }
   .diploma { box-shadow: none; width: 100%; page-break-inside: avoid; }

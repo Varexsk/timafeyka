@@ -6,6 +6,7 @@ import * as confetti from './confetti.js';
 import * as music from './music.js';
 import { lionSvg, thoughtHtml, pickLine, lionProp } from './lion.js';
 import { buildCtx } from './engine/ctx.js';
+import * as timer from './engine/timer.js';
 import { loadTypes } from './engine/registry.js';
 import * as screens from './screens.js';
 import { esc, owners, pointsOf } from './util.js';
@@ -27,7 +28,8 @@ const el = {
   confetti: document.getElementById('confetti'),
   nudge: document.getElementById('soundNudge'),
   panel: document.getElementById('tvPanel'),
-  panelGuests: document.getElementById('panelGuests')
+  panelGuests: document.getElementById('panelGuests'),
+  timerRing: document.getElementById('timerRing')
 };
 
 const PARTY = ['#E63946', '#FFC93C', '#22C1BC', '#FF7BAC', '#4CC96A', '#9B6BFF', '#4A90D9', '#FF8A3D'];
@@ -225,6 +227,7 @@ function render() {
   el.scorebar.style.display = ['welcome', 'finale', 'diploma', 'leaderboard'].includes(r.screen) ? 'none' : '';
   document.body.classList.toggle('is-rehearsal', !!r.rehearsal);
 
+  timer.update(r);
   applyAccent(r, ctx);
   scheduleScene(r, ctx);
   setProp(propFor(r, ctx));
@@ -381,6 +384,11 @@ function onKey(e) {
   if (k === 'd' || k === 'D' || k === 'в' || k === 'В') { bus.send('fx', { type: 'drumroll' }); return; }
   if (k === 'm' || k === 'M' || k === 'ь' || k === 'Ь') { bus.send('music', { on: !(state.runtime.music && state.runtime.music.on) }); return; }
   if (k === 'z' || k === 'Z' || k === 'я' || k === 'Я') { bus.send('undo'); return; }
+  if (k === 't' || k === 'T' || k === 'е' || k === 'Е') {
+    // Одна клавиша: нет таймера — запускаем минуту, есть — убираем.
+    bus.send(state.runtime.timer ? 'timerReset' : 'timerStart', { seconds: 60 });
+    return;
+  }
   if (/^[1-9]$/.test(k)) {
     const o = owners(state)[Number(k) - 1];
     if (o) award(o.id, pointsNow());
@@ -431,6 +439,15 @@ function init() {
   buildBalloons();
   buildLion();
   confetti.init(el.confetti);
+  timer.mount(el.timerRing, {
+    tick: () => sfx.play('tick'),
+    end: () => {
+      sfx.play('gong');
+      music.dip(2);
+      lionReact('sad');
+    },
+    done: (seq) => bus.send('timerDone', { seq })
+  });
   watchCursor();
 
   el.nudge.innerHTML = icon('sound') + ' Включить звук';

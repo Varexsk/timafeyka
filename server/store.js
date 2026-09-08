@@ -51,6 +51,8 @@ const store = {
     // На старте ничего не воспроизводим сами: команда видео должна прийти от экрана.
     this.runtime.fx = { type: '', seq: 0 };
     this.runtime.music = { on: false, seq: 0 };
+    // Таймер после перезапуска не должен внезапно досчитывать старое время.
+    this.runtime.timer = null;
     this.markAll();
     this.flush();
   },

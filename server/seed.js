@@ -279,6 +279,8 @@ const runtime = {
   rounds: {},
   roundOrder: [],
   lastAward: null,
+  // Таймер конкурса: null, пока его не запустили.
+  timer: null,
   // Последние начисления — чтобы ведущий мог отменить промах одним касанием.
   awardLog: []
 };

@@ -4,6 +4,7 @@ import * as bus from './bus.js';
 import { getType, loadTypes } from './engine/registry.js';
 import { buildCtx, activeContests } from './engine/ctx.js';
 import { voteInputs } from './engine/participation.js';
+import { clock, leftSeconds } from './engine/timer.js';
 import { esc, owners, isTeamMode, ownerAvatar, pointsOf } from './util.js';
 import { mountSprite, icon } from './icons.js';
 import { mountArtSprite } from './art.js';
@@ -56,6 +57,49 @@ function guestAvatar(g) {
   return `<span class="av" style="--c:${esc(g.color || 'var(--ink)')}">${inner}</span>`;
 }
 
+// ——— таймер ———
+
+// Разметку пересобираем, только когда меняется сам вид полосы: цифра тикает
+// четыре раза в секунду, и перерисовывать под пальцем кнопки нельзя.
+let timerShape = '';
+
+function timerHtml(t) {
+  if (!t) {
+    return `<span class="grow">Таймер</span>
+      <button class="btn btn--ghost" data-timer="start" data-sec="30">30 с</button>
+      <button class="btn btn--primary" data-timer="start" data-sec="60">Минута</button>
+      <button class="btn btn--ghost" data-timer="start" data-sec="120">2 мин</button>`;
+  }
+  const over = leftSeconds(t) <= 0;
+  const middle = over ? 'время вышло' : (t.label || (t.running ? 'идёт' : 'пауза'));
+  return `
+    <span class="t-num">${clock(t)}</span>
+    <span class="grow">${esc(middle)}</span>
+    ${over
+    ? `<button class="btn btn--primary" data-timer="start" data-sec="60">Ещё минуту</button>`
+    : `<button class="btn btn--ghost" data-timer="add" data-sec="10">+10 с</button>
+       ${t.running
+    ? `<button class="btn btn--ghost" data-timer="pause">${icon('pause')}</button>`
+    : `<button class="btn btn--primary" data-timer="resume">${icon('play')}</button>`}`}
+    <button class="btn btn--ghost" data-timer="reset" title="Убрать таймер">${icon('cross')}</button>`;
+}
+
+function renderTimer() {
+  const bar = $('timerBar');
+  if (!bar || !state) return;
+  const t = state.runtime.timer;
+  const shape = t ? [t.seq, t.running, leftSeconds(t) <= 0].join('|') : 'none';
+  if (shape !== timerShape) {
+    timerShape = shape;
+    bar.innerHTML = timerHtml(t);
+  }
+  if (!t) return;
+  const left = leftSeconds(t);
+  bar.className = 'r-timer' + (t.running && left <= 3 ? ' is-warn' : '');
+  const num = bar.querySelector('.t-num');
+  if (num) num.textContent = clock(t);
+}
+
 // Каждый ответ прилетает обратно с сервера и перерисовывает пульт. Если в этот
 // момент ведущий печатает число, поле подменяется под пальцами и цифры
 // теряются. Поэтому поле, в котором сейчас работают, оставляем как есть.
@@ -85,6 +129,7 @@ function render() {
   const ctx = ctxNow();
 
   document.body.classList.toggle('is-rehearsal', !!r.rehearsal);
+  renderTimer();
 
   $('topTitle').textContent = r.screen === 'show' && ctx.contest ? ctx.contest.title : SCREEN_NAMES[r.screen] || 'Показ';
   $('topSub').textContent = r.screen === 'show' && ctx.contest
@@ -207,6 +252,19 @@ function wire() {
       toast(delta > 0 ? 'Плюс балл!' : 'Минус балл');
       return;
     }
+    const tm = e.target.closest('[data-timer]');
+    if (tm) {
+      buzz();
+      const act = tm.dataset.timer;
+      const seconds = Number(tm.dataset.sec) || 0;
+      if (act === 'start') { bus.send('timerStart', { seconds }); toast('Время пошло!'); }
+      else if (act === 'add') { bus.send('timerAdd', { seconds }); toast('+' + seconds + ' с'); }
+      else if (act === 'pause') bus.send('timerPause');
+      else if (act === 'resume') bus.send('timerResume');
+      else if (act === 'reset') { bus.send('timerReset'); toast('Таймер убран'); }
+      return;
+    }
+
     const undo = e.target.closest('[data-undo]');
     if (undo) {
       buzz();
@@ -307,5 +365,7 @@ mountArtSprite();
 mountAvatarSprite();
 bus.onStatus((ok) => document.body.classList.toggle('is-offline', !ok));
 bus.onState((next) => { state = next; render(); });
+// Цифра должна тикать и без новых кадров с сервера.
+setInterval(renderTimer, 250);
 wire();
 bus.start('remote');
