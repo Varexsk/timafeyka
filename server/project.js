@@ -89,7 +89,9 @@ function playRound(round, ownerId, revealed) {
 }
 
 function playRuntime(runtime, ownerId, show) {
-  const revealed = runtime.phase === 'reveal';
+  // Ответ раскрыт только когда идёт показ. Иначе на заставке, где фаза
+  // осталась с прошлого вопроса, телефон получал бы ответ заранее.
+  const revealed = runtime.screen === 'show' && runtime.phase === 'reveal';
   const key = runtime.contestId + '/' + runtime.itemId;
   const out = {
     screen: runtime.screen,

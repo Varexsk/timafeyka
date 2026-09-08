@@ -120,6 +120,19 @@ test('после раскрытия ответы видны всем', () => {
   assert.deepEqual(Object.keys(out.round.votes), ['t-home']);
 });
 
+test('вне показа ответ не раскрывается, даже если фаза осталась «ответ»', () => {
+  // Так бывает всё время: ведущий раскрыл ответ и ушёл на заставку или
+  // к таблице лидеров. Гость, открывший телефон в этот момент, не должен
+  // получить ответ на вопрос, который ещё не начинали.
+  const runtime = {
+    screen: 'welcome', phase: 'reveal', contestId: 'c-quiz', itemId: 'q1',
+    rounds: { 'c-quiz/q1': { votes: { 't-home': { v: 1, at: 1 } }, awarded: true, gen: 0 } }
+  };
+  const out = playRuntime(runtime, 't-home', show);
+  assert.equal(out.correct, undefined, 'ответ ушёл вне показа');
+  assert.equal(out.round.votes, undefined, 'и чужие ответы тоже');
+});
+
 test('телевизору, пульту и кабинету отдаём всё как есть', () => {
   const snap = { show, guests: [], teams: [], runtime: {}, play: { players: {} } };
   for (const role of ['tv', 'remote', 'admin']) {
