@@ -642,6 +642,49 @@ const handlers = {
     return ['runtime', 'guests'];
   },
 
+  // ——— свой карман формата ———
+
+  // Случайное число, одинаковое для всех экранов. Что оно значит, решает
+  // формат: сектор колеса, номер фанта, порядок выступления. Главное, что
+  // тянет его сервер: иначе телевизор и телефон покажут разное.
+  roll({ key, max }) {
+    const round = roundAt(roundKey(currentContest(), currentItem()), true);
+    if (!round) return [];
+    const n = Math.max(1, Math.min(1000, Math.round(Number(max) || 1)));
+    if (!round.slice) round.slice = {};
+    const name = String(key || 'roll').slice(0, 30);
+    const prev = round.slice[name];
+    round.slice[name] = {
+      value: Math.floor(Math.random() * n),
+      seq: (prev && prev.seq ? prev.seq : 0) + 1
+    };
+    return ['runtime'];
+  },
+
+  // Формат может отложить в раунд что-то своё: отметку судьи, номер
+  // участника, промежуточный итог. Ядро в это не заглядывает.
+  // Формат может отложить что-то своё: отметку судьи, номер участника,
+  // промежуточный итог. Ядро в это не заглядывает.
+  //
+  // scope: «round» — при вопросе (по умолчанию), «contest» — на весь номер.
+  // Блицу нужен именно второй: счёт не должен обнуляться на каждом вопросе.
+  setSlice({ patch, scope }) {
+    if (!patch || typeof patch !== 'object') return [];
+
+    if (scope === 'contest') {
+      const contest = currentContest();
+      if (!contest) return [];
+      const all = store.runtime.contestSlices = store.runtime.contestSlices || {};
+      all[contest.id] = Object.assign(all[contest.id] || {}, patch);
+      return ['runtime'];
+    }
+
+    const round = roundAt(roundKey(currentContest(), currentItem()), true);
+    if (!round) return [];
+    round.slice = Object.assign(round.slice || {}, patch);
+    return ['runtime'];
+  },
+
   // ——— жужжалка ———
 
   // Дать сигнал: с этой секунды нажатия считаются.

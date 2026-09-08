@@ -129,11 +129,25 @@ function currentCtx() {
   return buildCtx(state);
 }
 
+// Что сейчас лежит в контейнере сцены: конкретный конкурс или экран показа.
+let sceneOwner = '';
+
+// Форматы с mount метят контейнер своими ключами, чтобы не перерисовывать
+// видео на каждом кадре. Если при уходе на другой номер эти метки не стереть,
+// формат при возврате решит, что рисовать нечего, — и на экране останется
+// чужая картинка. Раньше здесь стирались метки двух известных форматов,
+// и любой новый ломался молча.
+function claimScreen(owner) {
+  if (sceneOwner === owner) return;
+  sceneOwner = owner;
+  for (const key of Object.keys(el.screen.dataset)) delete el.screen.dataset[key];
+  el.screen.innerHTML = '';
+  paintKey = '';
+}
+
 function paint(key, html) {
   if (paintKey === key) return false;
   paintKey = key;
-  delete el.screen.dataset.vkey;
-  delete el.screen.dataset.akey;
   el.screen.innerHTML = html;
   // Игравший ролик выкинули из DOM — события pause уже не будет, снимаем приглушение сами.
   syncMusicDuck();
@@ -193,6 +207,8 @@ function ownersKey() {
 }
 
 function paintScene(r, ctx) {
+  claimScreen(r.screen === 'show' && ctx.contest ? 'c:' + ctx.contest.id : 's:' + r.screen);
+
   if (r.screen === 'welcome') paint('welcome|' + (net ? net.remoteUrl + '|' + net.playUrl : '') + '|' + ctx.playMode, screens.welcome(state, net));
   else if (r.screen === 'guests') paint('guests|' + JSON.stringify(state.guests.map((g) => g.name + g.avatar + g.teamId)) + ownersKey(), screens.guests(state));
   else if (r.screen === 'leaderboard') paint('board|' + ownersKey(), screens.leaderboard(state));

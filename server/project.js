@@ -71,6 +71,9 @@ function playRound(round, ownerId, revealed) {
   if (ownerId && votes[ownerId] !== undefined) out.mine = votes[ownerId].v;
   if (revealed) out.votes = votes;
 
+  // Карман формата — общий: колесо должно остановиться одинаково у всех.
+  if (round.slice) out.slice = round.slice;
+
   // Очередь жужжалки не секрет: наоборот, в ней весь смысл.
   const b = round.buzz;
   if (b) {

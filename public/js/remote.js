@@ -251,6 +251,12 @@ function undoLine() {
     </div>`;
 }
 
+// Что формат может делать с пульта.
+const remoteApi = {
+  send: (type, payload) => bus.send(type, payload),
+  toast
+};
+
 function musicOn() {
   return !!(state && state.runtime.music && state.runtime.music.on);
 }
@@ -360,10 +366,13 @@ function wire() {
       return;
     }
 
-    const media = e.target.closest('[data-media]');
-    if (media) {
+    // Свои кнопки формата. Обработчик лежит в самом формате: пульт не
+    // должен знать, что «на метку» бывает только у видео-конкурса.
+    const act = e.target.closest('[data-act]');
+    if (act) {
       const ctx = ctxNow();
-      bus.send('video', { action: media.dataset.media, at: (ctx.item && ctx.item.at) || 0 });
+      const fn = ctx.type && ctx.type.actions && ctx.type.actions[act.dataset.act];
+      if (fn) { buzz(); fn(ctx, remoteApi, act); }
       return;
     }
 

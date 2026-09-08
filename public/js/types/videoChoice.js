@@ -133,12 +133,21 @@ export default {
       <div class="r-note">Пауза на ${at.toFixed(1)} сек${ctx.item.revealEnd ? `, доигрываем до ${Number(ctx.item.revealEnd).toFixed(1)} сек` : ''}</div>
       ${ctx.item.answerNote ? `<div class="r-note">${esc(ctx.item.answerNote)}</div>` : ''}
       <div class="r-media-controls">
-        <button class="btn btn--ghost" data-media="back">${icon('rewind')} −2 сек</button>
-        <button class="btn btn--ghost" data-media="play">${icon('play')} Играть</button>
-        <button class="btn btn--ghost" data-media="pause">${icon('pause')} Пауза</button>
-        <button class="btn btn--ghost" data-media="fwd">${icon('forward')} +2 сек</button>
-        <button class="btn btn--ghost" data-media="mark">${icon('restart')} На метку</button>
+        <button class="btn btn--ghost" data-act="back">${icon('rewind')} −2 сек</button>
+        <button class="btn btn--ghost" data-act="play">${icon('play')} Играть</button>
+        <button class="btn btn--ghost" data-act="pause">${icon('pause')} Пауза</button>
+        <button class="btn btn--ghost" data-act="fwd">${icon('forward')} +2 сек</button>
+        <button class="btn btn--ghost" data-act="mark">${icon('restart')} На метку</button>
       </div>
     `;
+  },
+
+  // Управление плеером — дело этого формата, а не пульта.
+  actions: {
+    back(ctx, api) { api.send('video', { action: 'back' }); },
+    play(ctx, api) { api.send('video', { action: 'play' }); },
+    pause(ctx, api) { api.send('video', { action: 'pause' }); },
+    fwd(ctx, api) { api.send('video', { action: 'fwd' }); },
+    mark(ctx, api) { api.send('video', { action: 'mark', at: Number(ctx.item.at) || 0 }); }
   }
 };

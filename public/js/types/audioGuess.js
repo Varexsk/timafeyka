@@ -60,10 +60,16 @@ export default {
       </div>
       ${ctx.item.answerNote ? `<div class="r-note">${esc(ctx.item.answerNote)}</div>` : ''}
       <div class="r-media-controls">
-        <button class="btn btn--ghost" data-media="play">${icon('play')} Играть</button>
-        <button class="btn btn--ghost" data-media="pause">${icon('pause')} Пауза</button>
-        <button class="btn btn--ghost" data-media="restart">${icon('restart')} Сначала</button>
+        <button class="btn btn--ghost" data-act="play">${icon('play')} Играть</button>
+        <button class="btn btn--ghost" data-act="pause">${icon('pause')} Пауза</button>
+        <button class="btn btn--ghost" data-act="restart">${icon('restart')} Сначала</button>
       </div>
     `;
+  },
+
+  actions: {
+    play(ctx, api) { api.send('video', { action: 'play' }); },
+    pause(ctx, api) { api.send('video', { action: 'pause' }); },
+    restart(ctx, api) { api.send('video', { action: 'restart' }); }
   }
 };

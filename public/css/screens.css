@@ -113,6 +113,81 @@
   background: repeating-linear-gradient(135deg,
     var(--red) 0 1.1rem, #fff 1.1rem 2.2rem);
 }
+/* Блиц: счёт «верно / мимо» под вопросом. */
+.blitz-score {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  font-family: var(--font-slab);
+  font-size: 2.4rem;
+}
+
+.blitz-score .is-right { color: var(--green-deep); }
+.blitz-score .is-missed { color: var(--red); }
+.blitz-score .muted { font-family: var(--font-text); font-size: 1rem; font-weight: 900; color: var(--ink-soft); }
+
+/* «Год за минуту»: фотография во весь экран с подписью. */
+.slide { display: flex; flex-direction: column; align-items: center; gap: 0.8rem; width: 100%; }
+.slide .media-frame { max-height: 62vh; }
+.slide .media-frame img { max-height: 62vh; width: auto; }
+
+.slide-caption {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  color: var(--pink-deep);
+  text-align: center;
+}
+
+/* Пожелание крупно — его читают вслух. */
+.wish {
+  max-width: 46rem;
+  padding: 1.6rem 2rem;
+  border: 0.22rem solid var(--ink);
+  border-radius: var(--radius);
+  background: var(--paper);
+  box-shadow: var(--sticker);
+  text-align: center;
+}
+
+.wish-text { font-size: 1.8rem; font-weight: 900; line-height: 1.3; }
+.wish-from {
+  margin-top: 0.8rem;
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  color: var(--purple-deep);
+}
+
+/* Колесо фортуны. Угол приходит с сервера, поэтому останавливается оно
+   одинаково на всех экранах, а доезжает плавно — за счёт перехода. */
+.wheel-wrap {
+  position: relative;
+  width: min(26rem, 52vh);
+  aspect-ratio: 1;
+  margin: 0.4rem auto 0.2rem;
+}
+
+.wheel { width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 0.6rem 0 rgba(58, 35, 80, 0.18)); }
+
+.wheel-spin {
+  transform-origin: 50px 50px;
+  transform: rotate(var(--turn, 0deg));
+  transition: transform 4s cubic-bezier(0.15, 0.9, 0.2, 1);
+}
+
+.wheel-pin {
+  position: absolute;
+  left: 50%;
+  top: -0.7rem;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 0.85rem solid transparent;
+  border-right: 0.85rem solid transparent;
+  border-top: 1.7rem solid var(--ink);
+}
+
 /* Табло раунда: пока гости отвечают — сколько уже ответило, после ответа —
    кто угадал. Живёт вне #screen, поэтому не зависит от формата конкурса. */
 .round-bar {

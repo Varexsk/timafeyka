@@ -107,6 +107,10 @@ body.is-rehearsal .rehearsal-bar { display: flex; }
 .r-media-controls { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.5rem; }
 .r-media-controls .btn { flex: 1 1 30%; font-size: 0.88rem; padding: 0.55rem 0.4rem; }
 
+/* Блиц: две кнопки во весь палец — ведущий смотрит на зал, а не на телефон. */
+.blitz-keys { display: flex; gap: 0.5rem; margin-top: 0.6rem; }
+.blitz-keys .btn { flex: 1; min-height: 3.4rem; font-size: 1.1rem; }
+
 /* Таймер конкурса на пульте. */
 .r-timer:empty { display: none; }
 .r-timer {

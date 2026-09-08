@@ -6,7 +6,7 @@
 // что сейчас происходит на арене.
 
 import { getType } from './registry.js';
-import { owners, names } from '../util.js';
+import { owners, names, pointsOf } from '../util.js';
 
 // Как играем этот номер: «host» — всё вводит ведущий с пульта, «phones» —
 // гости отвечают со своих телефонов. У конкурса может быть своё значение,
@@ -76,6 +76,12 @@ export function buildCtx(state) {
     // Ответы участников на текущем вопросе.
     round,
     roundKey: key,
+    // Свой карман формата: сектор колеса, оценки судьи и прочее.
+    slice: (round && round.slice) || {},
+    // Тот же карман, но на весь номер — блицу нужен именно такой.
+    contestSlice: (contest && r.contestSlices && r.contestSlices[contest.id]) || {},
+    // Сколько стоит верный ответ здесь и сейчас.
+    points: pointsOf(contest),
     voteOf: (id) => (votes[id] === undefined ? null : votes[id].v),
     hasVote: (id) => votes[id] !== undefined,
     stats: voteStats(votes, people)

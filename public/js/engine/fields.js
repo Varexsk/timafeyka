@@ -88,10 +88,29 @@ const RENDER = {
     return box(d, `<textarea rows="${Number(d.rows) || 2}" ${tag(d, undefined, i)}>${esc(show(target, d.f))}</textarea>`);
   },
 
+  // Список строк одним полем: по одной в строке. Для секторов колеса,
+  // клеток бинго и прочих перечислений — набрать быстрее, чем нащёлкать.
+  lines(d, target, i) {
+    const list = Array.isArray(target[d.f]) ? target[d.f] : [];
+    return box(d, `<textarea rows="${Number(d.rows) || 6}" ${tag(d, undefined, i)} placeholder="${esc(d.placeholder || '')}">${esc(list.join('\n'))}</textarea>`);
+  },
+
   number(d, target, i) {
     return box(d, `<input type="number" ${tag(d, undefined, i)} step="${esc(d.step || 'any')}"
       ${d.min === undefined ? '' : `min="${esc(d.min)}"`} ${d.max === undefined ? '' : `max="${esc(d.max)}"`}
       value="${esc(show(target, d.f))}" placeholder="${esc(d.placeholder || '')}">`);
+  },
+
+  // Выбор одного из нескольких — когда вариантов больше двух и они не ответ,
+  // а настройка номера: как судим, кто играет, сколько кругов.
+  select(d, target, i) {
+    const values = d.values || [];
+    const cur = target[d.f] === undefined ? (values[0] || {}).v : target[d.f];
+    const options = values.map((v) => {
+      const on = String(v.v) === String(cur) ? ' selected' : '';
+      return `<option value="${esc(v.v)}"${on}>${esc(v.label)}</option>`;
+    }).join('');
+    return box(d, `<select ${tag(d, undefined, i)}>${options}</select>`);
   },
 
   choice(d, target, i) {
@@ -204,6 +223,10 @@ export function applyInput(list, el, target) {
     const opts = target[d.f] = target[d.f] || [];
     const opt = opts[Number(o)] || (opts[Number(o)] = { text: '', icon: '' });
     opt.text = el.value;
+    return true;
+  }
+  if (d.k === 'lines') {
+    target[d.f] = el.value.split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
     return true;
   }
   if (d.k === 'videoMarks') { target[f] = Number(el.value) || 0; return true; }
