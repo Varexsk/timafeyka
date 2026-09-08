@@ -30,7 +30,10 @@ const el = {
   panel: document.getElementById('tvPanel'),
   panelGuests: document.getElementById('panelGuests'),
   timerRing: document.getElementById('timerRing'),
-  roundBar: document.getElementById('roundBar')
+  roundBar: document.getElementById('roundBar'),
+  spotlight: document.getElementById('spotlight'),
+  interlude: document.getElementById('interlude'),
+  cake: document.getElementById('cake')
 };
 
 const PARTY = ['#E63946', '#FFC93C', '#22C1BC', '#FF7BAC', '#4CC96A', '#9B6BFF', '#4A90D9', '#FF8A3D'];
@@ -164,11 +167,24 @@ function scheduleScene(r, ctx) {
   sceneKey = key;
   if (first) { paintScene(r, ctx); return; }
   el.stage.classList.add('is-curtain');
+
+  // Между номерами — цирковая табличка на закрытом занавесе. Без неё
+  // конкурсы сливаются в один длинный список вопросов.
+  const plate = r.screen === 'show' && ctx.contest && state.show.interludes !== false
+    ? { top: ctx.contest.subtitle || `Номер ${ctx.contestIndex + 1}`, main: ctx.contest.title }
+    : null;
+  el.interlude.innerHTML = plate
+    ? `<div class="interlude-plate"><div class="top">${esc(plate.top)}</div><div class="main">${esc(plate.main)}</div></div>`
+    : '';
+  el.interlude.classList.toggle('is-on', !!plate);
+  if (plate) sfx.play('drumroll');
+
   clearTimeout(curtainTimer);
   curtainTimer = setTimeout(() => {
     paintScene(state.runtime, currentCtx());
+    el.interlude.classList.remove('is-on');
     el.stage.classList.remove('is-curtain');
-  }, 460);
+  }, plate ? 1500 : 460);
 }
 
 function applyAccent(r, ctx) {
@@ -245,6 +261,8 @@ function render() {
   document.body.classList.toggle('is-rehearsal', !!r.rehearsal);
 
   timer.update(r);
+  document.body.classList.toggle('is-spot', !!(r.spot && r.spot.on));
+  updateCake(r);
   applyAccent(r, ctx);
   scheduleScene(r, ctx);
   setProp(propFor(r, ctx));
@@ -345,7 +363,83 @@ function renderPanel() {
     </div>`).join('');
 }
 
+// ——— отсчёт до торта ———
+
+// Десять секунд гигантскими цифрами, свет гаснет, на нуле — фанфара.
+let cakeRaf = 0;
+
+function updateCake(r) {
+  const at = r.cake && r.cake.at;
+  if (!at) {
+    if (cakeRaf) cancelAnimationFrame(cakeRaf);
+    cakeRaf = 0;
+    el.cake.hidden = true;
+    document.body.classList.remove('is-cake');
+    return;
+  }
+  if (cakeRaf) return;
+
+  let last = -1;
+  const tick = () => {
+    cakeRaf = requestAnimationFrame(tick);
+    const left = Math.ceil((at - bus.serverNow()) / 1000);
+    if (left > 10) return;
+
+    // После нуля поздравление держится ещё пять секунд: секунда — это
+    // мгновение, за которое никто не успеет поднять глаза от торта.
+    if (left <= -5) {
+      el.cake.hidden = true;
+      document.body.classList.remove('is-cake');
+      cancelAnimationFrame(cakeRaf);
+      cakeRaf = 0;
+      return;
+    }
+
+    el.cake.hidden = false;
+    document.body.classList.add('is-cake');
+    if (left === last) return;
+    last = left;
+
+    if (left > 0) {
+      el.cake.innerHTML = `<div class="cake-num">${left}</div>`;
+      sfx.play('beep');
+      return;
+    }
+    if (left === 0) {
+      el.cake.innerHTML = '<div class="cake-word">С днём рождения!</div>';
+      sfx.play('tada');
+      confetti.fountain(200);
+      confetti.streamers(30);
+      music.dip(5);
+    }
+  };
+  tick();
+}
+
 // ——— реакции на события ———
+
+// Что делает каждая кнопка саундборда. Добавить звук — это строка в таблице,
+// а не ещё одна ветка в цепочке условий.
+const FX = {
+  confetti: { sound: 'applause', run: () => confetti.burst(140) },
+  drumroll: { sound: 'drumroll', dip: 3 },
+  applause: { sound: 'applause' },
+  correct: { sound: 'correct', run: () => lionReact('happy') },
+  wrong: { sound: 'wrong', run: () => lionReact('sad') },
+  tada: { sound: 'tada', dip: 4, run: () => confetti.fountain(160) },
+
+  // Реквизит клоуна.
+  slip: { sound: 'slip', run: () => lionReact('sad') },
+  trombone: { sound: 'trombone', dip: 2, run: () => lionReact('sad') },
+  gong: { sound: 'gong', dip: 2 },
+  boing: { sound: 'boing' },
+  honk: { sound: 'honk' },
+  beep: { sound: 'beep' },
+  buzz: { sound: 'buzz' },
+  bubbles: { sound: 'sparkle', run: () => confetti.bubbles(30) },
+  streamers: { sound: 'whoosh', run: () => confetti.streamers(26) },
+  hearts: { sound: 'sparkle', run: () => confetti.hearts(16) }
+};
 
 function popPoint(chip, delta) {
   const node = document.createElement('span');
@@ -361,13 +455,12 @@ function reactions() {
 
   if (r.fx && r.fx.seq !== seen.fx) {
     seen.fx = r.fx.seq;
-    const type = r.fx.type;
-    if (type === 'confetti') { confetti.burst(140); sfx.play('applause'); }
-    else if (type === 'drumroll') { sfx.play('drumroll'); music.dip(3); }
-    else if (type === 'applause') sfx.play('applause');
-    else if (type === 'correct') { sfx.play('correct'); lionReact('happy'); }
-    else if (type === 'wrong') { sfx.play('wrong'); lionReact('sad'); }
-    else if (type === 'tada') { sfx.play('tada'); confetti.fountain(160); music.dip(4); }
+    const effect = FX[r.fx.type];
+    if (effect) {
+      if (effect.sound) sfx.play(effect.sound);
+      if (effect.dip) music.dip(effect.dip);
+      if (effect.run) effect.run();
+    }
   }
 
   if (r.music && r.music.seq !== seen.music) {
@@ -456,6 +549,10 @@ function onKey(e) {
   if (k === 'd' || k === 'D' || k === 'в' || k === 'В') { bus.send('fx', { type: 'drumroll' }); return; }
   if (k === 'm' || k === 'M' || k === 'ь' || k === 'Ь') { bus.send('music', { on: !(state.runtime.music && state.runtime.music.on) }); return; }
   if (k === 'z' || k === 'Z' || k === 'я' || k === 'Я') { bus.send('undo'); return; }
+  if (k === 's' || k === 'S' || k === 'ы' || k === 'Ы') {
+    bus.send('spot', { on: !(state.runtime.spot && state.runtime.spot.on) });
+    return;
+  }
   if (k === 't' || k === 'T' || k === 'е' || k === 'Е') {
     // Одна клавиша: нет таймера — запускаем минуту, есть — убираем.
     bus.send(state.runtime.timer ? 'timerReset' : 'timerStart', { seconds: 60 });

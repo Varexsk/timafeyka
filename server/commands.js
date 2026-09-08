@@ -668,6 +668,23 @@ const handlers = {
     return ['runtime', 'guests'];
   },
 
+  // ——— свет и торт ———
+
+  // Приглушить зал: декорации гаснут, светится только арена.
+  spot({ on }) {
+    const r = store.runtime;
+    r.spot = { on: !!on, seq: (r.spot && r.spot.seq ? r.spot.seq : 0) + 1 };
+    return ['runtime'];
+  },
+
+  // Торт вынесли. Время назначать бесполезно — торты никогда не вовремя,
+  // поэтому отсчёт запускает ведущий, когда свечки уже зажгли.
+  cake() {
+    const r = store.runtime;
+    r.cake = { at: Date.now() + 10500, seq: (r.cake && r.cake.seq ? r.cake.seq : 0) + 1 };
+    return ['runtime'];
+  },
+
   // ——— свой карман формата ———
 
   // Случайное число, одинаковое для всех экранов. Что оно значит, решает

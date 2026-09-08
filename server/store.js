@@ -58,6 +58,8 @@ const store = {
     this.runtime.music = { on: false, seq: 0 };
     // Таймер после перезапуска не должен внезапно досчитывать старое время.
     this.runtime.timer = null;
+    this.runtime.cake = null;
+    this.runtime.spot = { on: false, seq: 0 };
     this.markAll();
     this.flush();
   },

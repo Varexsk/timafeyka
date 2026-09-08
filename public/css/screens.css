@@ -113,6 +113,95 @@
   background: repeating-linear-gradient(135deg,
     var(--red) 0 1.1rem, #fff 1.1rem 2.2rem);
 }
+/* Приглушённый свет: декорации гаснут, арена остаётся в луче.
+   Ниже #screen (z-index 4), чтобы вопрос оставался читаемым. */
+.spotlight {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.6s ease;
+  background: radial-gradient(circle at 50% 44%,
+    rgba(20, 10, 35, 0) 20%, rgba(20, 10, 35, 0.45) 45%, rgba(20, 10, 35, 0.82) 72%);
+}
+
+body.is-spot .spotlight { opacity: 1; }
+body.is-spot .sky,
+body.is-spot .balloons,
+body.is-spot .garland,
+body.is-spot .tent { opacity: 0.3; transition: opacity 0.6s ease; }
+
+/* Табличка между номерами — на закрытом занавесе (он поднимается до 12). */
+.interlude {
+  position: absolute;
+  inset: 0;
+  z-index: 14;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.interlude.is-on { opacity: 1; }
+
+.interlude-plate {
+  padding: 1.6rem 3rem;
+  border: 0.3rem solid var(--yellow-deep);
+  border-radius: var(--radius);
+  background: linear-gradient(180deg, #FFF6E5, #FFE9A8);
+  box-shadow: 0 0.8rem 0 rgba(58, 35, 80, 0.25), 0 1.4rem 3rem rgba(0, 0, 0, 0.3);
+  text-align: center;
+  animation: pop-in 0.35s ease;
+}
+
+.interlude-plate .top {
+  font-size: 1rem;
+  font-weight: 900;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--red-deep);
+}
+
+.interlude-plate .main {
+  margin-top: 0.4rem;
+  font-family: var(--font-display);
+  font-size: 3.4rem;
+  line-height: 1.05;
+  color: var(--ink);
+}
+
+/* Отсчёт до торта — поверх всего, включая занавес. */
+.cake {
+  position: absolute;
+  inset: 0;
+  z-index: 45;
+  display: grid;
+  place-items: center;
+  background: rgba(20, 10, 35, 0.93);
+  pointer-events: none;
+}
+
+.cake-num {
+  font-family: var(--font-display);
+  font-size: 22rem;
+  line-height: 1;
+  color: var(--yellow);
+  text-shadow: 0 1rem 0 rgba(0, 0, 0, 0.35);
+  animation: pop-in 0.3s ease;
+}
+
+.cake-word {
+  font-family: var(--font-display);
+  font-size: 6rem;
+  line-height: 1.1;
+  text-align: center;
+  color: var(--yellow);
+  text-shadow: 0 0.8rem 0 rgba(0, 0, 0, 0.35);
+  animation: pop-in 0.4s ease;
+}
+
 /* Аплодисметр: столбик громкости и планка рекорда. */
 .clap { display: flex; flex-direction: column; align-items: center; gap: 0.6rem; margin-top: 1rem; }
 

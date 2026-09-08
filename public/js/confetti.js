@@ -68,6 +68,79 @@ function spawn(n, opts) {
 export function burst(n) { if (ctx) spawn(Math.round((n || 90) * density())); }
 export function fountain(n) { if (ctx) spawn(Math.round((n || 140) * density()), { fountain: true }); }
 
+// Мыльные пузыри: медленно вверх, слегка виляют и лопаются под потолком.
+export function bubbles(n) {
+  if (!ctx) return;
+  if (!cw || !ch) resize();
+  const count = Math.round((n || 26) * density());
+  for (let i = 0; i < count; i++) {
+    parts.push({
+      x: Math.random() * cw,
+      y: ch + 20 + Math.random() * ch * 0.3,
+      vx: (Math.random() - 0.5) * 0.6,
+      vy: -(0.8 + Math.random() * 1.4),
+      g: -0.004,
+      w: 10 + Math.random() * 26,
+      h: 0,
+      rot: Math.random() * Math.PI * 2,
+      vr: 0.02 + Math.random() * 0.03,
+      color: 'rgba(255,255,255,0.85)',
+      kind: 'bubble',
+      rise: true,
+      life: 0
+    });
+  }
+  if (!raf) loop();
+}
+
+// Серпантин: длинные ленты, падают медленнее конфетти и сильнее вертятся.
+export function streamers(n) {
+  if (!ctx) return;
+  if (!cw || !ch) resize();
+  const count = Math.round((n || 24) * density());
+  for (let i = 0; i < count; i++) {
+    parts.push({
+      x: Math.random() * cw,
+      y: -30 - Math.random() * ch * 0.5,
+      vx: (Math.random() - 0.5) * 1.6,
+      vy: 1.2 + Math.random() * 1.6,
+      g: 0.02,
+      w: 4 + Math.random() * 4,
+      h: 40 + Math.random() * 70,
+      rot: Math.random() * Math.PI,
+      vr: (Math.random() - 0.5) * 0.12,
+      color: COLORS[(Math.random() * COLORS.length) | 0],
+      life: 0
+    });
+  }
+  if (!raf) loop();
+}
+
+// Сердечки — для тёплых номеров: летят снизу вверх.
+export function hearts(n, x) {
+  if (!ctx) return;
+  if (!cw || !ch) resize();
+  const count = Math.round((n || 12) * density());
+  for (let i = 0; i < count; i++) {
+    parts.push({
+      x: x === undefined ? Math.random() * cw : x + (Math.random() - 0.5) * 80,
+      y: ch + 20,
+      vx: (Math.random() - 0.5) * 1.4,
+      vy: -(2 + Math.random() * 2.5),
+      g: 0.012,
+      w: 12 + Math.random() * 14,
+      h: 0,
+      rot: (Math.random() - 0.5) * 0.4,
+      vr: (Math.random() - 0.5) * 0.03,
+      color: Math.random() < 0.5 ? '#ff7fb0' : '#e03a45',
+      kind: 'heart',
+      rise: true,
+      life: 0
+    });
+  }
+  if (!raf) loop();
+}
+
 export function sparkleAt(x, y, n) {
   if (!ctx) return;
   for (let i = 0; i < (n || 18); i++) {
@@ -88,6 +161,30 @@ export function sparkleAt(x, y, n) {
   if (!raf) loop();
 }
 
+function drawBubble(r) {
+  ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.arc(0, 0, r, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(255,255,255,0.14)';
+  ctx.fill();
+  ctx.stroke();
+  // Блик — без него шар не читается как мыльный пузырь.
+  ctx.beginPath();
+  ctx.arc(-r * 0.32, -r * 0.34, r * 0.16, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(255,255,255,0.85)';
+  ctx.fill();
+}
+
+function drawHeart(r) {
+  ctx.beginPath();
+  ctx.moveTo(0, r * 0.75);
+  ctx.bezierCurveTo(-r * 1.3, -r * 0.2, -r * 0.5, -r * 1.1, 0, -r * 0.35);
+  ctx.bezierCurveTo(r * 0.5, -r * 1.1, r * 1.3, -r * 0.2, 0, r * 0.75);
+  ctx.closePath();
+  ctx.fill();
+}
+
 function drawStar(x, y, r) {
   ctx.beginPath();
   for (let i = 0; i < 10; i++) {
@@ -104,18 +201,23 @@ function loop() {
   const w = cw;
   const h = ch;
   ctx.clearRect(0, 0, w, h);
-  parts = parts.filter((p) => p.y < h + 60 && p.life < 900);
+  // Что летит вверх, уходит за верхний край; остальное — за нижний.
+  parts = parts.filter((p) => p.life < 900 && (p.rise ? p.y > -80 : p.y < h + 60));
   for (const p of parts) {
     p.life++;
     p.vy += p.g;
     p.x += p.vx;
     p.y += p.vy;
     p.rot += p.vr;
+    // Пузырь виляет: прямая линия вверх выглядит неживой.
+    if (p.kind === 'bubble') p.x += Math.sin(p.life * 0.05) * 0.6;
     ctx.save();
     ctx.translate(p.x, p.y);
     ctx.rotate(p.rot);
     ctx.fillStyle = p.color;
-    if (p.star) drawStar(0, 0, p.w * 0.75);
+    if (p.kind === 'bubble') drawBubble(p.w * 0.5);
+    else if (p.kind === 'heart') drawHeart(p.w * 0.5);
+    else if (p.star) drawStar(0, 0, p.w * 0.75);
     else ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
     ctx.restore();
   }

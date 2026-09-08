@@ -24,6 +24,23 @@ const SCREEN_NAMES = {
   diploma: 'Диплом'
 };
 
+// Реквизит клоуна: то, чем разряжают паузу, когда номер не пошёл.
+// Порядок — как на пульте: сначала самое ходовое.
+const BOARD = [
+  { fx: 'drumroll', ic: 'drum', label: 'Дробь' },
+  { fx: 'tada', ic: 'sparkle', label: 'Фанфары' },
+  { fx: 'applause', ic: 'applause', label: 'Овации' },
+  { fx: 'trombone', ic: 'music', label: 'Уа-уа' },
+  { fx: 'slip', ic: 'masks', label: 'Шлёпок' },
+  { fx: 'boing', ic: 'balloon', label: 'Пружина' },
+  { fx: 'honk', ic: 'alert', label: 'Клаксон' },
+  { fx: 'gong', ic: 'medal', label: 'Гонг' },
+  { fx: 'beep', ic: 'dot', label: 'Бип' },
+  { fx: 'confetti', ic: 'confetti', label: 'Конфетти' },
+  { fx: 'streamers', ic: 'ticket', label: 'Серпантин' },
+  { fx: 'bubbles', ic: 'balloon', label: 'Пузыри' }
+];
+
 const QUICK = [
   { fx: 'confetti', ic: 'confetti', label: 'Конфетти' },
   { fx: 'drumroll', ic: 'drum', label: 'Дробь' },
@@ -32,7 +49,9 @@ const QUICK = [
   { screen: 'welcome', ic: 'tent', label: 'Заставка' },
   { screen: 'guests', ic: 'users', label: 'Гости' },
   { screen: 'leaderboard', ic: 'trophy', label: 'Лидеры' },
-  { playMode: true, ic: 'phone', label: 'Телефоны' }
+  { playMode: true, ic: 'phone', label: 'Телефоны' },
+  { spot: true, ic: 'sound', label: 'Свет' },
+  { cake: true, ic: 'gift', label: 'Торт!' }
 ];
 
 function ctxNow() {
@@ -158,6 +177,8 @@ function render() {
   // Кнопка музыки на всех пультах должна показывать одно и то же.
   const musicBtn = document.querySelector('[data-music]');
   if (musicBtn) musicBtn.classList.toggle('is-on', musicOn());
+  const spotBtn = document.querySelector('[data-spot]');
+  if (spotBtn) spotBtn.classList.toggle('is-on', !!(r.spot && r.spot.on));
   const phonesBtn = document.querySelector('[data-playmode]');
   if (phonesBtn) phonesBtn.classList.toggle('is-on', phonesOn());
   const ctx = ctxNow();
@@ -265,6 +286,8 @@ function attrFor(q) {
   if (q.fx) return 'data-fx="' + q.fx + '"';
   if (q.music) return 'data-music="1"';
   if (q.playMode) return 'data-playmode="1"';
+  if (q.spot) return 'data-spot="1"';
+  if (q.cake) return 'data-cake="1"';
   return 'data-screen="' + q.screen + '"';
 }
 
@@ -274,6 +297,11 @@ function phonesOn() {
 
 function wire() {
   $('topLogo').innerHTML = icon('hat');
+  $('soundBoard').innerHTML = BOARD.map((b) => `
+    <button class="btn btn--ghost" data-fx="${b.fx}">
+      ${icon(b.ic)}<span>${b.label}</span>
+    </button>`).join('');
+
   $('quickBox').innerHTML = QUICK.map((q) => `
     <button class="btn btn--ghost${q.music && musicOn() ? ' is-on' : ''}" ${attrFor(q)}>
       ${icon(q.ic)}<span>${q.label}</span>
@@ -327,6 +355,23 @@ function wire() {
       buzz();
       bus.send('undo');
       toast('Начисление отменено');
+      return;
+    }
+
+    const spot = e.target.closest('[data-spot]');
+    if (spot) {
+      buzz();
+      const next = !(state.runtime.spot && state.runtime.spot.on);
+      bus.send('spot', { on: next });
+      toast(next ? 'Свет приглушён' : 'Свет вернулся');
+      return;
+    }
+
+    const cakeBtn = e.target.closest('[data-cake]');
+    if (cakeBtn) {
+      buzz(30);
+      bus.send('cake');
+      toast('Несём торт!');
       return;
     }
 

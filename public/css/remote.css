@@ -107,6 +107,24 @@ body.is-rehearsal .rehearsal-bar { display: flex; }
 .r-media-controls { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.5rem; }
 .r-media-controls .btn { flex: 1 1 30%; font-size: 0.88rem; padding: 0.55rem 0.4rem; }
 
+/* Саундборд: сетка кнопок, по которым бьют не глядя. */
+.soundboard {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.45rem;
+}
+
+.soundboard .btn {
+  flex-direction: column;
+  gap: 0.2rem;
+  min-height: 4rem;
+  padding: 0.5rem 0.3rem;
+  font-size: 0.82rem;
+  line-height: 1.1;
+}
+
+.soundboard .btn .ic { width: 1.5rem; height: 1.5rem; }
+
 /* Блиц: две кнопки во весь палец — ведущий смотрит на зал, а не на телефон. */
 .blitz-keys { display: flex; gap: 0.5rem; margin-top: 0.6rem; }
 .blitz-keys .btn { flex: 1; min-height: 3.4rem; font-size: 1.1rem; }

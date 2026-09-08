@@ -259,6 +259,7 @@ function ownerRow(o, kind) {
 function renderPlayers() {
   const phones = (state.show.playMode === 'phones');
   $('modePhones').checked = phones;
+  $('modeInterludes').checked = state.show.interludes !== false;
 
   const players = Object.values((state.play && state.play.players) || {});
   const byId = {};
@@ -554,6 +555,11 @@ $('btnAddTeam').addEventListener('click', () => {
   input.value = '';
 });
 $('newTeamName').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('btnAddTeam').click(); });
+
+$('modeInterludes').addEventListener('change', (e) => {
+  bus.send('updateShow', { patch: { interludes: e.target.checked } });
+  markSaved();
+});
 
 $('modePhones').addEventListener('change', (e) => {
   bus.send('setPlayMode', { mode: e.target.checked ? 'phones' : 'host' });
