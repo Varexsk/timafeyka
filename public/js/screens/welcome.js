@@ -3,22 +3,33 @@
 import { esc, names } from '../util.js';
 import { qrSvg } from '../lib/qr.js';
 
+// В режиме «телефоны» на заставке крупный QR для гостей: навёл камеру —
+// и играешь. Ссылка на пульт ведущему нужна один раз, она уходит вниз мелко.
 export function welcome(state, net) {
   const n = names(state);
-  const url = net && net.url ? net.url : '';
+  const phones = ((state.show && state.show.playMode) === 'phones');
+  const play = (net && net.playUrl) || '';
+  const remote = (net && net.remoteUrl) || '';
+
+  const card = (url, label, hint) => `
+    <div class="connect-card fade-in">
+      ${qrSvg(url, { dark: '#3A2350', light: '#ffffff' })}
+      <div>
+        <div class="label">${esc(label)}</div>
+        <div class="url">${esc(url)}</div>
+        ${hint ? `<div class="hint" style="margin:.3rem 0 0">${esc(hint)}</div>` : ''}
+      </div>
+    </div>`;
+
   return `
     <div class="eyebrow fade-in">Дамы и господа, добро пожаловать</div>
     <h1 class="title-xl gold-text fade-in">${esc(n.title)}</h1>
     <div class="welcome-age">${esc(n.age)}</div>
     <div class="title-m fade-in purple-text">${esc(n.hero)} празднует первый день рождения!</div>
-    ${url ? `
-      <div class="connect-card fade-in">
-        ${qrSvg(url, { dark: '#3A2350', light: '#ffffff' })}
-        <div>
-          <div class="label">Пульт ведущего</div>
-          <div class="url">${esc(url)}</div>
-        </div>
-      </div>` : ''}
+    ${phones && play
+    ? card(play, 'Наведи камеру — будешь играть', 'Гости отвечают со своих телефонов')
+    : (remote ? card(remote, 'Пульт ведущего', '') : '')}
+    ${phones && play && remote ? `<div class="hint">Пульт ведущего: ${esc(remote)}</div>` : ''}
     <div class="hint">Начинаем — «дальше» на пульте или пробел на клавиатуре</div>
   `;
 }

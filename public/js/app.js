@@ -29,7 +29,8 @@ const el = {
   nudge: document.getElementById('soundNudge'),
   panel: document.getElementById('tvPanel'),
   panelGuests: document.getElementById('panelGuests'),
-  timerRing: document.getElementById('timerRing')
+  timerRing: document.getElementById('timerRing'),
+  roundBar: document.getElementById('roundBar')
 };
 
 const PARTY = ['#E63946', '#FFC93C', '#22C1BC', '#FF7BAC', '#4CC96A', '#9B6BFF', '#4A90D9', '#FF8A3D'];
@@ -192,7 +193,7 @@ function ownersKey() {
 }
 
 function paintScene(r, ctx) {
-  if (r.screen === 'welcome') paint('welcome|' + (net ? net.url : ''), screens.welcome(state, net));
+  if (r.screen === 'welcome') paint('welcome|' + (net ? net.remoteUrl + '|' + net.playUrl : '') + '|' + ctx.playMode, screens.welcome(state, net));
   else if (r.screen === 'guests') paint('guests|' + JSON.stringify(state.guests.map((g) => g.name + g.avatar + g.teamId)) + ownersKey(), screens.guests(state));
   else if (r.screen === 'leaderboard') paint('board|' + ownersKey(), screens.leaderboard(state));
   else if (r.screen === 'finale') paint('finale|' + ownersKey(), screens.finale(state));
@@ -232,6 +233,7 @@ function render() {
   scheduleScene(r, ctx);
   setProp(propFor(r, ctx));
   renderScorebar();
+  renderRoundBar(r, ctx);
   renderPanel();
 
   // реплика львёнка
@@ -243,11 +245,43 @@ function render() {
   } else say(pickLine(r.screen === 'diploma' ? 'finale' : r.screen, ctx.contestIndex));
 }
 
-function chipAvatar(g) {
-  const inner = hasAvatar(g.avatar)
+function chipAvatarInner(g) {
+  return hasAvatar(g.avatar)
     ? avatar(g.avatar)
     : `<span style="display:grid;place-items:center;width:100%;height:100%">${esc(g.emoji || '')}</span>`;
-  return `<span class="av">${inner}</span>`;
+}
+
+function chipAvatar(g) {
+  return `<span class="av">${chipAvatarInner(g)}</span>`;
+}
+
+// Табло раунда. Пока идёт вопрос — сколько ответило (но не кто что выбрал:
+// этого экран и сам не знает до раскрытия). После ответа — кто угадал;
+// список берём из журнала начислений, чтобы не считать победителей дважды.
+function renderRoundBar(r, ctx) {
+  const box = el.roundBar;
+  const vote = ctx.type && ctx.type.participation && ctx.type.participation.vote;
+  const live = r.screen === 'show' && ctx.contest && ctx.item && ctx.playMode === 'phones' && vote;
+  if (!live) { box.hidden = true; return; }
+  box.hidden = false;
+
+  if (r.phase === 'reveal') {
+    const award = (r.awardLog || []).filter((e) => e.roundKey === ctx.roundKey && !e.undone).pop();
+    const ids = award ? award.entries.map((e) => e.id) : [];
+    const winners = ctx.owners.filter((o) => ids.includes(o.id));
+    box.innerHTML = winners.length
+      ? `<span class="rb-label">Угадали!</span>` + winners.map((o) => dot(o, true)).join('')
+      + `<span class="rb-label">${winners.map((o) => esc(o.name)).join(', ')}</span>`
+      : '<span class="rb-label">В этот раз не угадал никто</span>';
+    return;
+  }
+
+  box.innerHTML = `<span class="rb-label">Ответили <span class="rb-count">${ctx.stats.answered}</span> из ${ctx.stats.total}</span>`
+    + ctx.owners.map((o) => dot(o, ctx.hasVote(o.id))).join('');
+}
+
+function dot(o, on) {
+  return `<span class="rb-dot ${on ? 'is-on' : ''}" style="--c:${esc(o.color || 'var(--ink)')}">${chipAvatarInner(o)}</span>`;
 }
 
 function renderScorebar() {
@@ -471,8 +505,7 @@ function init() {
   }).catch(() => {});
 
   fetch('/api/net').then((r) => r.json()).then((info) => {
-    const host = info.addresses && info.addresses[0];
-    net = { url: host ? `http://${host}:${info.port}/remote` : '' };
+    net = { remoteUrl: info.remoteUrl || '', playUrl: info.playUrl || '' };
     paintKey = '';
     if (state) render();
   }).catch(() => {});

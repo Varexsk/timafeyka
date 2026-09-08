@@ -8,7 +8,7 @@ const migrate = require('./migrate');
 // Обычно состояние лежит в data/ рядом с проектом. Переменная нужна тестам,
 // чтобы гонять команды на временной копии и не портить настоящий праздник.
 const DATA = process.env.CIRK_DATA || path.join(__dirname, '..', 'data');
-const FILES = { show: 'show.json', guests: 'guests.json', runtime: 'runtime.json' };
+const FILES = { show: 'show.json', guests: 'guests.json', runtime: 'runtime.json', play: 'play.json' };
 
 function readJson(name) {
   try {
@@ -29,10 +29,13 @@ const store = {
   version: 1,
   // Своя версия у каждого среза: страница получает только то, что у неё
   // устарело. Иначе на каждый ответ гостя всем уходил бы весь снимок.
-  versions: { show: 1, guests: 1, runtime: 1 },
+  versions: { show: 1, guests: 1, runtime: 1, play: 1 },
   show: null,
   guests: null,
   runtime: null,
+  // Кто сейчас подключён с телефона. Список живёт отдельно от гостей:
+  // гость может прийти без телефона, а с одной семьи их может быть три.
+  play: null,
   _pending: new Set(),
   _timer: null,
 
@@ -41,6 +44,8 @@ const store = {
     this.show = readJson(FILES.show) || clone(seed.show);
     this.guests = readJson(FILES.guests) || clone(seed.guests);
     this.runtime = Object.assign(clone(seed.runtime), readJson(FILES.runtime) || {});
+    this.play = readJson(FILES.play) || { players: {} };
+    if (!this.play.players) this.play.players = {};
     // Старые данные (эмодзи вместо картинок, отсутствие семей) переводим на новые поля.
     if (!Array.isArray(this.guests.teams)) this.guests.teams = clone(seed.guests.teams);
     if (!this.show.mode) this.show.mode = 'teams';
@@ -63,7 +68,8 @@ const store = {
       show: this.show,
       guests: this.guests.list,
       teams: this.guests.teams,
-      runtime: this.runtime
+      runtime: this.runtime,
+      play: this.play
     };
   },
 
@@ -99,6 +105,7 @@ const store = {
     this.show = clone(seed.show);
     this.guests = clone(seed.guests);
     this.runtime = clone(seed.runtime);
+    this.play = { players: {} };
     this.version += 1;
     this.markAll();
     this.flush();

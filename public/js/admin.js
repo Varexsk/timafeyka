@@ -254,6 +254,34 @@ function ownerRow(o, kind) {
     </div>`;
 }
 
+// Кто сейчас подключён с телефона. Один владелец может держать несколько
+// телефонов — в семье их и правда несколько.
+function renderPlayers() {
+  const phones = (state.show.playMode === 'phones');
+  $('modePhones').checked = phones;
+
+  const players = Object.values((state.play && state.play.players) || {});
+  const byId = {};
+  for (const o of (state.teams || []).concat(state.guests || [])) byId[o.id] = o;
+
+  $('playersBox').innerHTML = `
+    <div class="muted" style="margin-bottom:.5rem">
+      ${phones
+    ? 'Гости отвечают со своих телефонов. QR-код для них показан на заставке.'
+    : 'Сейчас праздник идёт только с твоего пульта. Включи галочку слева, чтобы раздать телефоны.'}
+    </div>
+    ${players.length
+    ? players.map((p) => {
+      const owner = byId[p.ownerId];
+      return `<div class="g-line">
+          <span class="nm" style="flex:1;font-weight:900">${esc(p.name || (owner ? owner.name : '—'))}</span>
+          <span class="muted">${owner ? esc(owner.name) : 'отвязан'}</span>
+          <button class="a-btn a-btn--sm a-btn--danger" data-kick="${esc(p.id)}">${icon('cross')}</button>
+        </div>`;
+    }).join('')
+    : '<div class="muted">Пока никто не подключился.</div>'}`;
+}
+
 function renderTeams() {
   $('modeTeams').checked = (state.show.mode || 'teams') === 'teams';
   $('teamList').innerHTML = (state.teams || []).map((t) => ownerRow(t, 'team')).join('')
@@ -527,6 +555,16 @@ $('btnAddTeam').addEventListener('click', () => {
 });
 $('newTeamName').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('btnAddTeam').click(); });
 
+$('modePhones').addEventListener('change', (e) => {
+  bus.send('setPlayMode', { mode: e.target.checked ? 'phones' : 'host' });
+  markSaved();
+});
+
+$('playersBox').addEventListener('click', (e) => {
+  const kick = e.target.closest('[data-kick]');
+  if (kick) bus.send('kickPlayer', { playerId: kick.dataset.kick });
+});
+
 $('modeTeams').addEventListener('change', (e) => {
   bus.send('setMode', { mode: e.target.checked ? 'teams' : 'guests' }).then(markSaved);
 });
@@ -655,6 +693,7 @@ $('icList').innerHTML = icon('list');
 $('icUsers').innerHTML = icon('users');
 $('icTeams').innerHTML = icon('home');
 $('icSettings').innerHTML = icon('settings');
+$('icPlayers').innerHTML = icon('phone');
 $('icCheck').innerHTML = icon('check-circle');
 $('icEdit').innerHTML = icon('edit');
 $('icFile').innerHTML = icon('file');
@@ -667,6 +706,7 @@ bus.onState((next) => {
   renderTeams();
   renderGuests();
   renderReady();
+  renderPlayers();
   $('btnRehearsal').classList.toggle('a-btn--primary', !!state.runtime.rehearsal);
   $('btnRehearsal').textContent = state.runtime.rehearsal ? 'Закончить репетицию' : 'Репетиция';
   const n = names(state);

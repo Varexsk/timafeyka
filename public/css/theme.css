@@ -57,6 +57,11 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Атрибут hidden должен побеждать display из макета. Без этого спрятанный
+   элемент остаётся на экране: так кнопка «Включить звук» висела весь показ,
+   а пустые табло и кольцо таймера светились поверх сцены. */
+[hidden] { display: none !important; }
+
 h1, h2, h3 { margin: 0; font-family: var(--font-display); font-weight: 400; letter-spacing: 0.01em; }
 
 /* Крупные заголовки-афиши: цветная заливка с белой обводкой, как в цирковой афише. */

@@ -31,7 +31,8 @@ const QUICK = [
   { music: true, ic: 'music', label: 'Музыка' },
   { screen: 'welcome', ic: 'tent', label: 'Заставка' },
   { screen: 'guests', ic: 'users', label: 'Гости' },
-  { screen: 'leaderboard', ic: 'trophy', label: 'Лидеры' }
+  { screen: 'leaderboard', ic: 'trophy', label: 'Лидеры' },
+  { playMode: true, ic: 'phone', label: 'Телефоны' }
 ];
 
 function ctxNow() {
@@ -126,6 +127,8 @@ function render() {
   // Кнопка музыки на всех пультах должна показывать одно и то же.
   const musicBtn = document.querySelector('[data-music]');
   if (musicBtn) musicBtn.classList.toggle('is-on', musicOn());
+  const phonesBtn = document.querySelector('[data-playmode]');
+  if (phonesBtn) phonesBtn.classList.toggle('is-on', phonesOn());
   const ctx = ctxNow();
 
   document.body.classList.toggle('is-rehearsal', !!r.rehearsal);
@@ -223,7 +226,12 @@ function musicOn() {
 function attrFor(q) {
   if (q.fx) return 'data-fx="' + q.fx + '"';
   if (q.music) return 'data-music="1"';
+  if (q.playMode) return 'data-playmode="1"';
   return 'data-screen="' + q.screen + '"';
+}
+
+function phonesOn() {
+  return !!(state && state.show && state.show.playMode === 'phones');
 }
 
 function wire() {
@@ -270,6 +278,15 @@ function wire() {
       buzz();
       bus.send('undo');
       toast('Начисление отменено');
+      return;
+    }
+
+    const phones = e.target.closest('[data-playmode]');
+    if (phones) {
+      buzz();
+      const next = !phonesOn();
+      bus.send('setPlayMode', { mode: next ? 'phones' : 'host' });
+      toast(next ? 'Гости играют с телефонов' : 'Ведём с пульта');
       return;
     }
 

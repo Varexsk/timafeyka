@@ -102,6 +102,15 @@ test('до раскрытия видно только сколько ответ�
   assert.ok(!wire.includes('t-guests'), 'по кадру нельзя понять, кто что выбрал');
 });
 
+test('свой ответ игрок видит и после раскрытия', () => {
+  const runtime = {
+    screen: 'show', phase: 'reveal', contestId: 'c-quiz', itemId: 'q1',
+    rounds: { 'c-quiz/q1': { votes: { 't-home': { v: 2, at: 1 } }, awarded: true, gen: 0 } }
+  };
+  const out = playRuntime(runtime, 't-home', show);
+  assert.equal(out.round.mine, 2, 'иначе на телефоне «вы не ответили» у того, кто ответил');
+});
+
 test('после раскрытия ответы видны всем', () => {
   const runtime = {
     screen: 'show', phase: 'reveal', contestId: 'c-quiz', itemId: 'q1',
@@ -112,13 +121,28 @@ test('после раскрытия ответы видны всем', () => {
 });
 
 test('телевизору, пульту и кабинету отдаём всё как есть', () => {
+  const snap = { show, guests: [], teams: [], runtime: {}, play: { players: {} } };
   for (const role of ['tv', 'remote', 'admin']) {
-    assert.equal(project('show', show, role, ''), show, 'роль ' + role);
+    assert.equal(project('show', snap, role, ''), show, 'роль ' + role);
   }
-  assert.notEqual(project('show', show, 'play', ''), show, 'а телефону — урезанное');
+  assert.notEqual(project('show', snap, 'play', ''), show, 'а телефону — урезанное');
 });
 
 test('имена и баллы не прячем — их и так видно на телевизоре', () => {
   const guests = [{ id: 'g1', name: 'Мама', score: 3 }];
-  assert.equal(project('guests', guests, 'play', ''), guests);
+  const snap = { show, guests, teams: [], runtime: {}, play: { players: {} } };
+  assert.equal(project('guests', snap, 'play', ''), guests);
+});
+
+test('после раскрытия телефон узнаёт правильный ответ — иначе гость не поймёт, угадал ли', () => {
+  const runtime = {
+    screen: 'show', phase: 'reveal', contestId: 'c-quiz', itemId: 'q1',
+    rounds: { 'c-quiz/q1': { votes: {}, awarded: true, gen: 0 } }
+  };
+  const out = playRuntime(runtime, 't-home', show);
+  assert.equal(out.correct.answer, 1);
+
+  // А до раскрытия — не узнаёт.
+  const hidden = playRuntime(Object.assign({}, runtime, { phase: 'question' }), 't-home', show);
+  assert.equal(hidden.correct, undefined);
 });

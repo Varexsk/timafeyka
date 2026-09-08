@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#FFF6E5">
+  <title>Играем · Цирк Тимоши</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/theme.css">
+  <link rel="stylesheet" href="css/play.css">
+</head>
+<body class="play">
+  <div class="p-top">
+    <span class="p-av" id="myAvatar"></span>
+    <div class="who">
+      <div class="name" id="myName">Подключаюсь…</div>
+      <div class="sub" id="mySub"></div>
+    </div>
+    <div class="p-score" id="myScore"></div>
+  </div>
+
+  <div class="p-timer" id="playTimer"></div>
+
+  <main class="p-body" id="playBody"></main>
+
+  <div class="p-toast" id="toast"></div>
+  <div class="p-offline">Нет связи — пробую переподключиться…</div>
+
+  <script type="module" src="js/play.js"></script>
+</body>
+</html>

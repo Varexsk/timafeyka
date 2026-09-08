@@ -48,6 +48,11 @@ function migrateShow(show) {
     changed = true;
   }
 
+  if (show && show.playMode === undefined) {
+    show.playMode = 'host';
+    changed = true;
+  }
+
   for (const contest of (show && show.contests) || []) {
     for (const item of contest.items || []) {
       for (const opt of item.options || []) {

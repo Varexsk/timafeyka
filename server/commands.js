@@ -242,7 +242,7 @@ function settleRound() {
   round.awarded = true;
   if (!winners.length) return [];
   const delta = pointsFor(contest);
-  return applyAward(winners.map((id) => ({ id, delta })), contest.title);
+  return applyAward(winners.map((id) => ({ id, delta })), contest.title, roundKey(contest, item));
 }
 
 // ——— таймер ———
@@ -293,7 +293,7 @@ function autoTimer() {
 // Единственное место, где меняется счёт. Пишем в журнал ровно те дельты,
 // которые реально применились (счёт не уходит ниже нуля), — тогда отмена
 // возвращает всё точь-в-точь.
-function applyAward(entries, reason) {
+function applyAward(entries, reason, roundKey) {
   const done = [];
   for (const e of entries || []) {
     const owner = findOwner(e.id);
@@ -309,7 +309,14 @@ function applyAward(entries, reason) {
   const r = store.runtime;
   const seq = (r.lastAward && r.lastAward.seq ? r.lastAward.seq : 0) + 1;
   r.lastAward = { seq, entries: done };
-  r.awardLog = (r.awardLog || []).concat([{ seq, at: Date.now(), reason: String(reason || ''), entries: done }]).slice(-20);
+  r.awardLog = (r.awardLog || []).concat([{
+    seq,
+    at: Date.now(),
+    reason: String(reason || ''),
+    // За какой вопрос начислено — по этому экран показывает, кто угадал.
+    roundKey: roundKey || '',
+    entries: done
+  }]).slice(-20);
   return ['guests', 'runtime'];
 }
 
@@ -652,6 +659,46 @@ const handlers = {
       return ['runtime'].concat(settleRound());
     }
     return ['runtime'];
+  },
+
+  // ——— телефоны гостей ———
+
+  // Гость выбрал себя на экране «Кто ты?». Ни сессий, ни паролей:
+  // это домашняя сеть на четыре часа, а не банк.
+  join({ playerId, ownerId, name }) {
+    const id = String(playerId || '').slice(0, 40);
+    if (!id) return [];
+    const owner = findOwner(ownerId);
+    if (!owner) return [];
+
+    const was = store.play.players[id];
+    store.play.players[id] = {
+      id,
+      ownerId: owner.id,
+      name: String(name || owner.name || '').slice(0, 40),
+      joinedAt: (was && was.joinedAt) || Date.now(),
+      seenAt: Date.now()
+    };
+    return ['play'];
+  },
+
+  leave({ playerId }) {
+    if (!store.play.players[playerId]) return [];
+    delete store.play.players[playerId];
+    return ['play'];
+  },
+
+  // Ведущий может отвязать чужой телефон из кабинета.
+  kickPlayer({ playerId }) {
+    if (!store.play.players[playerId]) return [];
+    delete store.play.players[playerId];
+    return ['play'];
+  },
+
+  // Как играем: всё с пульта ведущего или гости отвечают со своих телефонов.
+  setPlayMode({ mode }) {
+    store.show.playMode = mode === 'phones' ? 'phones' : 'host';
+    return ['show'];
   },
 
   updateShow({ patch }) {

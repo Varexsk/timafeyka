@@ -12,7 +12,7 @@ let watchdog = 0;
 let state = null;
 let skew = 0;   // насколько часы сервера впереди наших
 
-const SLICES = ['show', 'guests', 'teams', 'runtime'];
+const SLICES = ['show', 'guests', 'teams', 'runtime', 'play'];
 
 export function send(type, payload) {
   return fetch('/api/command', {
@@ -75,6 +75,12 @@ export function start(role, ownerId) {
   }
 }
 
-export function fetchState() {
-  return fetch('/api/state').then((r) => r.json());
+// Разовый запрос состояния. Роль обязательна — по умолчанию сервер отдаёт
+// самый урезанный вид, как телефону гостя.
+export function fetchState(role, ownerId) {
+  const params = new URLSearchParams();
+  if (role) params.set('role', role);
+  if (ownerId) params.set('owner', ownerId);
+  const query = params.toString();
+  return fetch('/api/state' + (query ? '?' + query : '')).then((r) => r.json());
 }

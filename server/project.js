@@ -33,6 +33,8 @@ function playShow(show) {
         type: c.type,
         title: c.title,
         subtitle: c.subtitle,
+        rules: c.rules,
+        playMode: c.playMode,
         pointsPerCorrect: c.pointsPerCorrect,
         multiplier: c.multiplier,
         items: (c.items || []).map((it) => ({
@@ -48,6 +50,12 @@ function playShow(show) {
   };
 }
 
+function itemAt(show, contestId, itemId) {
+  const contest = (show.contests || []).find((c) => c.id === contestId);
+  if (!contest) return null;
+  return (contest.items || []).find((it) => it.id === itemId) || null;
+}
+
 // Пока ответ не раскрыт, наружу уходит «сколько ответили», а не «кто что выбрал».
 // Свой собственный ответ игрок видит всегда — иначе непонятно, отправился ли он.
 function playRound(round, ownerId, revealed) {
@@ -58,15 +66,17 @@ function playRound(round, ownerId, revealed) {
     awarded: !!round.awarded,
     gen: round.gen || 0
   };
+  // Свой ответ игрок видит всегда — и до раскрытия, и после: иначе на экране
+  // «вы не ответили» у того, кто честно ответил.
+  if (ownerId && votes[ownerId] !== undefined) out.mine = votes[ownerId].v;
   if (revealed) out.votes = votes;
-  else if (ownerId && votes[ownerId] !== undefined) out.mine = votes[ownerId].v;
   return out;
 }
 
-function playRuntime(runtime, ownerId) {
+function playRuntime(runtime, ownerId, show) {
   const revealed = runtime.phase === 'reveal';
   const key = runtime.contestId + '/' + runtime.itemId;
-  return {
+  const out = {
     screen: runtime.screen,
     phase: runtime.phase,
     contestId: runtime.contestId,
@@ -77,14 +87,31 @@ function playRuntime(runtime, ownerId) {
     lastAward: runtime.lastAward,
     round: playRound((runtime.rounds || {})[key], ownerId, revealed)
   };
+
+  // Ответ раскрыли — теперь его можно показать и на телефоне, чтобы гость
+  // увидел, угадал он или нет.
+  if (revealed && show) {
+    const item = itemAt(show, runtime.contestId, runtime.itemId);
+    if (item) {
+      out.correct = {
+        answer: Number.isInteger(item.answer) ? item.answer : null,
+        answerText: item.answerText || '',
+        value: item.value === undefined ? null : item.value,
+        unit: item.unit || ''
+      };
+    }
+  }
+  return out;
 }
 
 // Срез состояния под конкретную страницу. Для своих — как есть.
-function project(key, value, role, ownerId) {
+// snap — весь снимок: проекции иногда нужен соседний срез.
+function project(key, snap, role, ownerId) {
+  const value = key === 'guests' ? snap.guests : snap[key];
   if (!isPlayer(role)) return value;
   if (key === 'show') return playShow(value || {});
-  if (key === 'runtime') return playRuntime(value || {}, ownerId);
-  return value; // имена и баллы — не секрет, их и так видно на телевизоре
+  if (key === 'runtime') return playRuntime(value || {}, ownerId, snap.show || {});
+  return value; // имена, баллы и список телефонов — не секрет
 }
 
 module.exports = { project, playShow, playRuntime, ROLES };

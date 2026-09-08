@@ -8,6 +8,16 @@
 import { getType } from './registry.js';
 import { owners, names } from '../util.js';
 
+// Как играем этот номер: «host» — всё вводит ведущий с пульта, «phones» —
+// гости отвечают со своих телефонов. У конкурса может быть своё значение,
+// и оно сильнее общего: физический номер логично вести с пульта, даже если
+// весь остальной праздник идёт на телефонах.
+export function playModeOf(state, contest) {
+  const own = contest && contest.playMode;
+  if (own === 'host' || own === 'phones') return own;
+  return ((state && state.show && state.show.playMode) === 'phones') ? 'phones' : 'host';
+}
+
 // Ключ раунда — «конкурс/вопрос». По нему сервер хранит ответы участников.
 export function roundKey(contest, item) {
   return contest && item ? contest.id + '/' + item.id : '';
@@ -59,6 +69,7 @@ export function buildCtx(state) {
     total: items.length,
     phase: r.phase,
     type: contest ? getType(contest.type) : null,
+    playMode: playModeOf(state, contest),
     owners: people,
     names: names(state),
 

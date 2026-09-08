@@ -50,7 +50,7 @@ const AUDIO_EXT = ['.mp3', '.m4a', '.ogg', '.wav'];
 
 const clients = new Set();
 
-const SLICES = ['show', 'guests', 'runtime'];
+const SLICES = ['show', 'guests', 'runtime', 'play'];
 
 // Кадр несёт только то, что у этого клиента устарело, плюс серверное время —
 // по нему страницы сверяют часы (пригодится таймеру).
@@ -65,7 +65,7 @@ function frameFor(client) {
       out.guests = snap.guests;
       out.teams = snap.teams;
     } else {
-      out[key] = project(key, snap[key], client.role, client.ownerId);
+      out[key] = project(key, snap, client.role, client.ownerId);
     }
   }
   return out;
@@ -74,7 +74,7 @@ function frameFor(client) {
 function pushTo(client) {
   const frame = frameFor(client);
   // Ничего нового — не будим страницу зря.
-  if (frame.show === undefined && frame.guests === undefined && frame.runtime === undefined) return;
+  if (SLICES.every((k) => frame[k] === undefined) && frame.teams === undefined) return;
   try {
     client.res.write('data: ' + JSON.stringify(frame) + '\n\n');
   } catch (e) {
@@ -206,10 +206,28 @@ const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, 'http://localhost');
   const pathname = decodeURIComponent(url.pathname);
 
-  if (pathname === '/api/state') { sendJson(res, 200, store.snapshot()); return; }
+  if (pathname === '/api/state') {
+    // Снимок отдаём тем же урезанным видом, что и телефону, пока явно не
+    // попросили другую роль. Сеть домашняя и без паролей — это не защита,
+    // а чтобы гость, ткнув в адресную строку, случайно не увидел ответы.
+    const asked = url.searchParams.get('role');
+    const role = ROLES.includes(asked) ? asked : 'play';
+    const snap = store.snapshot();
+    const out = { version: snap.version, teams: snap.teams };
+    for (const key of SLICES) out[key] = project(key, snap, role, url.searchParams.get('owner') || '');
+    sendJson(res, 200, out);
+    return;
+  }
 
   if (pathname === '/api/net') {
-    sendJson(res, 200, { port: PORT, addresses: localAddresses() });
+    const addrs = localAddresses();
+    const base = addrs.length ? 'http://' + addrs[0] + ':' + PORT : '';
+    sendJson(res, 200, {
+      port: PORT,
+      addresses: addrs,
+      remoteUrl: base ? base + '/remote' : '',
+      playUrl: base ? base + '/play' : ''
+    });
     return;
   }
 
@@ -285,7 +303,7 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  const pages = { '/': 'index.html', '/remote': 'remote.html', '/admin': 'admin.html' };
+  const pages = { '/': 'index.html', '/remote': 'remote.html', '/admin': 'admin.html', '/play': 'play.html' };
   if (pages[pathname]) { serveFile(req, res, path.join(PUBLIC, pages[pathname])); return; }
 
   const file = safeJoin(PUBLIC, pathname);

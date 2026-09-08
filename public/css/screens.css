@@ -113,6 +113,45 @@
   background: repeating-linear-gradient(135deg,
     var(--red) 0 1.1rem, #fff 1.1rem 2.2rem);
 }
+/* Табло раунда: пока гости отвечают — сколько уже ответило, после ответа —
+   кто угадал. Живёт вне #screen, поэтому не зависит от формата конкурса. */
+.round-bar {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 4.7rem;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  max-width: 80%;
+  padding: 0.45rem 1rem;
+  border-radius: 999px;
+  background: var(--paper);
+  border: 0.16rem solid var(--ink);
+  box-shadow: var(--sticker-sm);
+}
+
+.round-bar .rb-label { font-weight: 900; font-size: 1.05rem; color: var(--ink); }
+.round-bar .rb-count { font-family: var(--font-slab); color: var(--teal-deep); }
+
+.round-bar .rb-dot {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  border: 0.14rem solid var(--c, var(--ink));
+  background: #fff;
+  overflow: hidden;
+  opacity: 0.28;
+  filter: grayscale(1);
+  transition: opacity 0.25s ease, filter 0.25s ease, transform 0.25s ease;
+}
+
+.round-bar .rb-dot svg { width: 100%; height: 100%; display: block; }
+.round-bar .rb-dot.is-on { opacity: 1; filter: none; transform: scale(1.08); }
+
 /* Таймер конкурса. Живёт вне #screen, поэтому переживает перерисовки сцены. */
 .timer-ring {
   position: absolute;
