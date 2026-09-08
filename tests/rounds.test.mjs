@@ -175,6 +175,42 @@ test('старые раунды не копятся бесконечно', () =>
   assert.equal(Object.keys(store.runtime.rounds).length, 6);
 });
 
+test('аукцион: победитель платит ставку и забирает приз', () => {
+  const [a, b] = reset();
+  const lot = {
+    id: 'c-auc', type: 'auction', enabled: true, subtitle: '', title: 'Аукцион',
+    rules: '', lionLine: '', pointsPerCorrect: 1,
+    items: [{ id: 'lot1', q: 'Право задуть свечку', prize: 10 }]
+  };
+  send('saveContest', { contest: lot });
+  send('goto', { contestId: 'c-auc', itemId: 'lot1', phase: 'question' });
+
+  // Сначала дадим семьям, чем платить.
+  send('award', { id: a.id, delta: 8 });
+  send('award', { id: b.id, delta: 8 });
+
+  send('vote', { ownerId: a.id, value: '3' });
+  send('vote', { ownerId: b.id, value: '7' });
+  send('reveal', { on: true });
+
+  assert.equal(scoreOf(b.id), 8 + 10 - 7, 'заплатил семь, получил десять');
+  assert.equal(scoreOf(a.id), 8, 'проигравший не платит ничего');
+});
+
+test('аукцион без ставок никому ничего не даёт', () => {
+  reset();
+  const lot = {
+    id: 'c-auc2', type: 'auction', enabled: true, subtitle: '', title: 'Аукцион',
+    rules: '', lionLine: '', pointsPerCorrect: 1,
+    items: [{ id: 'lot1', q: 'Лот', prize: 5 }]
+  };
+  send('saveContest', { contest: lot });
+  send('goto', { contestId: 'c-auc2', itemId: 'lot1', phase: 'question' });
+  send('reveal', { on: true });
+
+  assert.deepEqual(store.runtime.awardLog, []);
+});
+
 test.after(() => {
   store.flush();
   fs.rmSync(TMP, { recursive: true, force: true });

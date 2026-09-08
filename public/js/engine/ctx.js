@@ -6,6 +6,7 @@
 // что сейчас происходит на арене.
 
 import { getType } from './registry.js';
+import { send } from '../bus.js';
 import { owners, names, pointsOf } from '../util.js';
 
 // Как играем этот номер: «host» — всё вводит ведущий с пульта, «phones» —
@@ -80,6 +81,9 @@ export function buildCtx(state) {
     slice: (round && round.slice) || {},
     // Тот же карман, но на весь номер — блицу нужен именно такой.
     contestSlice: (contest && r.contestSlices && r.contestSlices[contest.id]) || {},
+    // Формат может отправить команду прямо со страницы, на которой нарисован:
+    // так аплодисметр сообщает результат замера, снятый с микрофона.
+    send,
     // Сколько стоит верный ответ здесь и сейчас.
     points: pointsOf(contest),
     voteOf: (id) => (votes[id] === undefined ? null : votes[id].v),

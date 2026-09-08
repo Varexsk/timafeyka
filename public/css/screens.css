@@ -113,6 +113,57 @@
   background: repeating-linear-gradient(135deg,
     var(--red) 0 1.1rem, #fff 1.1rem 2.2rem);
 }
+/* Аплодисметр: столбик громкости и планка рекорда. */
+.clap { display: flex; flex-direction: column; align-items: center; gap: 0.6rem; margin-top: 1rem; }
+
+.clap-bar {
+  position: relative;
+  width: 7rem;
+  height: 22rem;
+  max-height: 46vh;
+  border: 0.22rem solid var(--ink);
+  border-radius: var(--radius);
+  background: rgba(58, 35, 80, 0.06);
+  overflow: hidden;
+}
+
+.clap-bar span {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 0;
+  background: linear-gradient(180deg, var(--red), var(--yellow) 45%, var(--green));
+  transition: height 0.08s linear;
+}
+
+.clap-bar i {
+  position: absolute;
+  left: -0.3rem;
+  right: -0.3rem;
+  bottom: 0;
+  height: 0.22rem;
+  background: var(--ink);
+  transition: bottom 0.2s ease;
+}
+
+.clap-note { max-width: 26rem; text-align: center; font-weight: 700; color: var(--ink-soft); font-size: 0.95rem; }
+
+.clap-scores { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem; margin-top: 0.8rem; }
+
+.clap-score {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.8rem;
+  border: 0.16rem solid var(--c, var(--ink));
+  border-radius: 999px;
+  background: var(--paper);
+  font-weight: 900;
+}
+
+.clap-score .pt { font-family: var(--font-slab); color: var(--teal-deep); }
+
 /* Блиц: счёт «верно / мимо» под вопросом. */
 .blitz-score {
   display: flex;

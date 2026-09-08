@@ -198,6 +198,23 @@ function pickWinners(scoring, item, round) {
     return ids.filter((id) => Number(votes[id].v) === right);
   }
 
+  // Аукцион: побеждает самая большая ставка. При равенстве — кто поставил раньше.
+  if (scoring.rule === 'highestBid') {
+    let best = 0;
+    let at = Infinity;
+    let winner = null;
+    for (const id of ids) {
+      const bid = Number(votes[id].v);
+      if (!isFinite(bid) || bid <= 0) continue;
+      if (bid > best || (bid === best && votes[id].at < at)) {
+        best = bid;
+        at = votes[id].at;
+        winner = id;
+      }
+    }
+    return winner ? [winner] : [];
+  }
+
   if (scoring.rule === 'nearest') {
     const target = Number(item[scoring.field || 'value']);
     if (!isFinite(target) || item[scoring.field || 'value'] === null) return [];
@@ -241,6 +258,15 @@ function settleRound() {
   const winners = pickWinners(scoring, item, round);
   round.awarded = true;
   if (!winners.length) return [];
+
+  // Аукцион устроен иначе: победитель платит свою ставку и забирает приз.
+  if (scoring.rule === 'highestBid') {
+    const id = winners[0];
+    const bid = Number((round.votes[id] || {}).v) || 0;
+    const prize = Number(item[scoring.prizeField || 'prize']) || pointsFor(contest);
+    return applyAward([{ id, delta: prize - bid }], contest.title, roundKey(contest, item));
+  }
+
   const delta = pointsFor(contest);
   return applyAward(winners.map((id) => ({ id, delta })), contest.title, roundKey(contest, item));
 }
