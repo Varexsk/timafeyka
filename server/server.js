@@ -7,6 +7,7 @@ const os = require('os');
 const { store } = require('./store');
 const { applyCommand } = require('./commands');
 const types = require('./types');
+const { project, ROLES } = require('./project');
 
 const ROOT = path.join(__dirname, '..');
 const PUBLIC = path.join(ROOT, 'public');
@@ -42,15 +43,57 @@ const PHOTO_EXT = ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.avif'];
 const VIDEO_EXT = ['.mp4', '.webm', '.mov', '.m4v'];
 const AUDIO_EXT = ['.mp3', '.m4a', '.ogg', '.wav'];
 
-// ——— SSE ———
+// ——— поток состояния ———
+//
+// Клиент — это не просто открытое соединение, а ещё и роль (кто смотрит)
+// и отметка о том, какие срезы он уже получил.
 
 const clients = new Set();
 
-function broadcast() {
-  const payload = 'data: ' + JSON.stringify(store.snapshot()) + '\n\n';
-  for (const res of clients) {
-    try { res.write(payload); } catch (e) { clients.delete(res); }
+const SLICES = ['show', 'guests', 'runtime'];
+
+// Кадр несёт только то, что у этого клиента устарело, плюс серверное время —
+// по нему страницы сверяют часы (пригодится таймеру).
+function frameFor(client) {
+  const snap = store.snapshot();
+  const out = { version: store.version, v: {}, now: Date.now() };
+  for (const key of SLICES) {
+    out.v[key] = store.versions[key];
+    if (client.seen[key] === store.versions[key]) continue;
+    client.seen[key] = store.versions[key];
+    if (key === 'guests') {
+      out.guests = snap.guests;
+      out.teams = snap.teams;
+    } else {
+      out[key] = project(key, snap[key], client.role, client.ownerId);
+    }
   }
+  return out;
+}
+
+function pushTo(client) {
+  const frame = frameFor(client);
+  // Ничего нового — не будим страницу зря.
+  if (frame.show === undefined && frame.guests === undefined && frame.runtime === undefined) return;
+  try {
+    client.res.write('data: ' + JSON.stringify(frame) + '\n\n');
+  } catch (e) {
+    clients.delete(client);
+  }
+}
+
+function broadcast() {
+  for (const client of clients) pushTo(client);
+}
+
+// Залп команд (двенадцать телефонов жмут одновременно) склеиваем в один кадр.
+let broadcastTimer = null;
+function scheduleBroadcast() {
+  if (broadcastTimer) return;
+  broadcastTimer = setTimeout(() => {
+    broadcastTimer = null;
+    broadcast();
+  }, 16);
 }
 
 // ——— вспомогательное ———
@@ -183,10 +226,14 @@ const server = http.createServer(async (req, res) => {
       'X-Accel-Buffering': 'no'
     });
     res.write('retry: 1000\n\n');
-    res.write('data: ' + JSON.stringify(store.snapshot()) + '\n\n');
-    clients.add(res);
+
+    const role = ROLES.includes(url.searchParams.get('role')) ? url.searchParams.get('role') : 'tv';
+    const client = { res, role, ownerId: url.searchParams.get('owner') || '', seen: {} };
+    clients.add(client);
+    pushTo(client);
+
     const ping = setInterval(() => { try { res.write(': ping\n\n'); } catch (e) { /* ignore */ } }, 20000);
-    req.on('close', () => { clearInterval(ping); clients.delete(res); });
+    req.on('close', () => { clearInterval(ping); clients.delete(client); });
     return;
   }
 
@@ -197,7 +244,7 @@ const server = http.createServer(async (req, res) => {
       return;
     }
     const result = applyCommand(body.type, body.payload);
-    if (result.ok) broadcast();
+    if (result.ok) scheduleBroadcast();
     sendJson(res, result.ok ? 200 : 400, Object.assign({ version: store.version }, result));
     return;
   }

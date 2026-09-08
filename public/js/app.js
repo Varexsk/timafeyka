@@ -466,7 +466,7 @@ function init() {
     render();
     reactions();
   });
-  bus.start();
+  bus.start('tv');
 
   setTimeout(() => { el.nudge.hidden = sfx.isReady(); }, 1200);
 }

@@ -308,4 +308,4 @@ mountAvatarSprite();
 bus.onStatus((ok) => document.body.classList.toggle('is-offline', !ok));
 bus.onState((next) => { state = next; render(); });
 wire();
-bus.start();
+bus.start('remote');

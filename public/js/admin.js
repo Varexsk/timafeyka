@@ -682,5 +682,5 @@ bus.onState((next) => {
     if (firstContest) selectContest(firstContest.id, -1);
   }
 });
-bus.start();
+bus.start('admin');
 loadMedia();

@@ -27,6 +27,9 @@ function writeJson(name, value) {
 
 const store = {
   version: 1,
+  // Своя версия у каждого среза: страница получает только то, что у неё
+  // устарело. Иначе на каждый ответ гостя всем уходил бы весь снимок.
+  versions: { show: 1, guests: 1, runtime: 1 },
   show: null,
   guests: null,
   runtime: null,
@@ -64,12 +67,18 @@ const store = {
 
   touch(...keys) {
     this.version += 1;
-    for (const k of keys) this._pending.add(k);
+    for (const k of keys) {
+      if (this.versions[k] !== undefined) this.versions[k] += 1;
+      this._pending.add(k);
+    }
     if (!this._timer) this._timer = setTimeout(() => this.flush(), 300);
   },
 
   markAll() {
-    for (const k of Object.keys(FILES)) this._pending.add(k);
+    for (const k of Object.keys(FILES)) {
+      if (this.versions[k] !== undefined) this.versions[k] += 1;
+      this._pending.add(k);
+    }
   },
 
   flush() {
