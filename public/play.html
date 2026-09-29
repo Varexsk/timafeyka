@@ -20,8 +20,17 @@
   </div>
 
   <div class="p-timer" id="playTimer"></div>
+  <a href="capsule.html" id="capsuleLink" hidden style="display:block;text-align:center;padding:1rem">Письмо Тимофею в будущее →</a>
 
   <main class="p-body" id="playBody"></main>
+
+  <div class="p-booth" id="boothBar" hidden>
+    <label class="p-booth-btn">
+      <input type="file" accept="image/*" capture="environment" id="boothInput" hidden>
+      <span>Сфотографировать для альбома</span>
+    </label>
+    <div class="p-booth-hint" id="boothHint"></div>
+  </div>
 
   <div class="p-toast" id="toast"></div>
   <div class="p-offline">Нет связи — пробую переподключиться…</div>

@@ -1,0 +1,55 @@
+/* Permanent foreground wings: opening never drops behind the scene. */
+.tv .stage .curtain { width: 51%; z-index: 12; transition: transform 1.25s cubic-bezier(.65,0,.25,1); will-change: transform; box-shadow: inset 0 2rem 2rem #30081c80, inset 0 -2rem 3rem #30081c66, 0 1rem 2rem #30112760; }
+.tv .stage .curtain--left { transform: translateX(-91%); border-radius: 0 0 12% 0; }
+.tv .stage .curtain--right { transform: translateX(91%); border-radius: 0 0 0 12%; }
+.tv .stage.is-curtain .curtain { width: 51%; transform: translateX(0); }
+.tv .stage::after { display: none; }
+.theater-atmosphere { position: absolute; inset: 0; pointer-events: none; box-shadow: inset 0 7vh 12vh #4b153442, inset 0 -6vh 10vh #855b2533; }
+.theater-lights { position: absolute; inset: 0; z-index: 9; pointer-events: none; overflow: hidden; opacity: 0; transition: opacity 1.2s ease; }
+.moving-light { position: absolute; top: 4vh; width: 46vw; height: 130vh; margin-left: -23vw; transform-origin: 50% 0; will-change: transform; }
+.light-left { left: 15%; transform: rotate(-40deg); }
+.light-right { left: 85%; transform: rotate(40deg); }
+.light-beam { position: absolute; inset: 1.4rem 0 0; clip-path: polygon(49% 0,51% 0,100% 100%,0 100%); background: linear-gradient(180deg,#fffbe5dc 0%,#ffdc8580 35%,#ffd78225 85%,transparent); mask-image: linear-gradient(90deg,transparent,black 18%,black 82%,transparent); filter: blur(5px); }
+.light-right .light-beam { background: linear-gradient(180deg,#ebfcffdd 0%,#9cdbe866 40%,#b0ddec20 85%,transparent); }
+.light-fixture { position: absolute; top: -.8rem; left: calc(50% - 1.5rem); width: 3rem; height: 2.5rem; border: .2rem solid #9c806b; border-radius: .65rem .65rem 45% 45%; background: linear-gradient(90deg,#24192d,#695969 45%,#261a32); box-shadow: 0 .3rem .4rem #220c2870; }
+.light-fixture i { position: absolute; bottom: -.35rem; left: 10%; width: 80%; height: .8rem; border-radius: 50%; background: #fff5c1; box-shadow: 0 0 1rem .35rem #ffe69caf; }
+@keyframes light-sweep-left { from { transform: rotate(-31deg); } to { transform: rotate(18deg); } }
+@keyframes light-sweep-right { from { transform: rotate(26deg); } to { transform: rotate(-24deg); } }
+.theater-full .lion-wrap { --walk-distance: 23vw; }
+.theater-full:not(.party-overlay-open) .lion-wrap:not([data-act]):not(.is-hidden) { animation: leva-stroll 28s ease-in-out infinite; }
+.theater-full .has-roster .lion-wrap { --walk-distance: 13vw; }
+.theater-full .lion .foot-left { animation: leva-step .65s ease-in-out infinite alternate; transform-origin: 82px 252px; }
+.theater-full .lion .foot-right { animation: leva-step .65s ease-in-out -.65s infinite alternate; transform-origin: 118px 252px; }
+.theater-full .lion-wrap[data-act=enter] { animation: leva-stage-enter 3s ease-out both; }
+.theater-full .lion-wrap[data-act=enter] .thought { opacity: 0; }
+.theater-full .lion-wrap[data-act=clap] .foot-left,.theater-full .lion-wrap[data-act=clap] .foot-right { animation: none; }
+.director-hero .lion-wrap { animation: none; }
+@keyframes leva-stroll { 0%,100% { transform: translateX(0); } 12%,20% { transform: translateX(7vw); } 43%,57% { transform: translateX(var(--walk-distance,23vw)); } 80%,88% { transform: translateX(7vw); } }
+@keyframes leva-stage-enter { 0% { opacity: 0; transform: translateX(-23vw); } 25% { opacity: 1; } 75% { transform: translateX(8vw); } 100% { opacity: 1; transform: translateX(0); } }
+@keyframes leva-step { from { transform: translateY(0) rotate(-8deg); } to { transform: translateY(-5px) rotate(10deg); } }
+.theater-calm .moving-light,.theater-calm .lion-wrap,.theater-calm .lion,.theater-calm .lion * { animation: none !important; }
+.theater-calm .light-beam { opacity: .25; }
+.theater-calm .stage .curtain { transition-duration: .15s; }
+.party-overlay-open .theater-lights { opacity: 0; }
+.theater-introduction .theater-lights { opacity: 1; transition-duration: .7s; }
+.theater-introduction .light-left { animation: intro-spot-left 4.6s ease-in-out both; }
+.theater-introduction .light-right { animation: intro-spot-right 4.6s ease-in-out both; }
+@keyframes intro-spot-left { 0% { transform: rotate(-58deg); } 45% { transform: rotate(-32deg); } 100% { transform: rotate(-40deg); } }
+@keyframes intro-spot-right { 0% { transform: rotate(58deg); } 45% { transform: rotate(32deg); } 100% { transform: rotate(40deg); } }
+.theater-house-dimmer { position: absolute; inset: 0; z-index: 8; background: #0c0812; opacity: 0; pointer-events: none; transition: opacity 1.5s ease-in-out; }
+.theater-introduction .theater-house-dimmer { opacity: .97; transition: none; }
+.interlude.cinema-title { z-index: 10; transition: opacity .9s ease, transform .9s ease; transform: translateY(1rem); padding: 5vw; }
+.interlude.cinema-title.is-on { transform: translateY(0); }
+.cinema-title .interlude-plate { background: none; border: 0; box-shadow: none; max-width: 80vw; padding: 1rem; animation: none; }
+.cinema-title .interlude-plate .top { color: #d9b981; font-size: 1.3rem; letter-spacing: .28em; }
+.cinema-title .interlude-plate .main { color: #fff0cb; font-size: clamp(2rem,5vw,6rem); line-height: 1.2; text-wrap: balance; text-shadow: 0 0 2rem #ffcb6655, 0 .2rem .2rem #0009; }
+/* Dark oak: long boards, fine grain and a shaded back edge. */
+.tv .ring::after { background: linear-gradient(180deg,#08040299,transparent 35%,#08040255), repeating-linear-gradient(2deg,transparent 0 3px,#d7a7710c 4px,transparent 5px 8px), repeating-linear-gradient(90deg,#180d0770 0 2px,transparent 3px calc(14vw - 1px),#9d704331 14vw), repeating-linear-gradient(0deg,#2b180f 0 2px,#513220 3px,#3c2518 2.4rem,#21120b 2.5rem); box-shadow: inset 0 .35rem .5rem #160b0780; }
+.tv .ring::before { background: linear-gradient(180deg,#c59c61 0 .16rem,#3c2316 .22rem,#21130c 100%); box-shadow: inset 0 .16rem #ecc99166,0 -.25rem 1rem #22130d35; }
+/* The competition itself stays calm; expressive gestures still work. */
+.theater-full .stage[data-screen="show"] .lion-wrap:not([data-act]) { animation: none; }
+.theater-full .stage[data-screen="show"] .lion-wrap:not([data-act]) .foot-left,
+.theater-full .stage[data-screen="show"] .lion-wrap:not([data-act]) .foot-right { animation: none; }
+.stage[data-screen="show"] .balloon,.stage[data-screen="show"] .sky .dot { animation-play-state: paused; }
+.theater-calm .theater-house-dimmer { transition-duration: .4s; }
+@media print { .theater-lights,.theater-atmosphere { display: none; } }

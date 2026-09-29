@@ -136,11 +136,12 @@ body.is-rehearsal .rehearsal-bar { display: flex; }
   align-items: center;
   gap: 0.5rem;
   flex-wrap: wrap;
-  margin: 0 0.7rem 0.6rem;
+  margin: 0 0 0.7rem;
   padding: 0.5rem 0.7rem;
-  border: 0.1rem solid var(--stroke);
+  border: 0.14rem solid var(--ink);
   border-radius: var(--radius);
-  background: var(--sticker);
+  background: var(--paper);
+  box-shadow: var(--sticker-sm);
 }
 
 .r-timer .t-num {
@@ -189,8 +190,9 @@ body.is-rehearsal .rehearsal-bar { display: flex; }
 }
 .g-row .nm { flex: 1; font-weight: 900; font-size: 1.05rem; }
 .g-row .pt {
-  font-family: var(--font-slab);
-  font-size: 1.3rem;
+  font-family: var(--font-num);
+  font-weight: 900;
+  font-size: 1.4rem;
   color: var(--orange-deep);
   min-width: 1.8rem;
   text-align: center;
@@ -288,3 +290,29 @@ body.is-rehearsal .rehearsal-bar { display: flex; }
   display: block;
 }
 .av-fallback { display: grid; place-items: center; width: 100%; height: 100%; }
+ .roster-pager { display: flex; align-items: center; justify-content: space-between; gap: .6rem; margin-bottom: 1rem; font-weight: 800; }
+
+/* Разброс ответов внутри семьи: кто что сказал и что засчиталось. */
+.vote-by {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.2rem 0.45rem;
+  padding: 0.35rem 0.5rem;
+  margin-bottom: 0.35rem;
+  border-radius: 0.5rem;
+  background: rgba(0, 0, 0, 0.05);
+  font-size: 0.92rem;
+}
+.vote-by-owner { font-weight: 900; }
+.vote-by-list { color: var(--ink-soft); font-weight: 700; }
+.vote-by-sum { font-weight: 900; margin-left: auto; white-space: nowrap; }
+
+/* Поиск по программе и найденные вопросы под своим номером. */
+.jump-search {
+  width: 100%; margin-bottom: .5rem; padding: .55rem .7rem;
+  border: 2px solid var(--line, #e2d3b8); border-radius: .6rem;
+  font: inherit; font-weight: 700;
+}
+.jump-item--q { padding-left: 2.2rem; font-size: .92rem; opacity: .85; }
+.jump-item--q .nm { font-weight: 700; }

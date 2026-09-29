@@ -1,6 +1,6 @@
 import { art, hasArt } from './art.js';
 import { icon } from './icons.js';
-import { avatar, hasAvatar } from './avatars.js';
+import { avatar, hasAvatar, isPhotoAvatar, photoAvatar } from './avatars.js';
 
 // Очки считаются либо семьям, либо каждому гостю — зависит от режима праздника.
 export function owners(state) {
@@ -14,9 +14,11 @@ export function isTeamMode(state) {
 }
 
 export function ownerAvatar(owner, cls) {
-  const inner = hasAvatar(owner.avatar)
-    ? avatar(owner.avatar)
-    : `<span class="av-fallback">${esc(owner.emoji || '')}</span>`;
+  const inner = isPhotoAvatar(owner.avatar)
+    ? photoAvatar(owner.avatar)
+    : hasAvatar(owner.avatar)
+      ? avatar(owner.avatar)
+      : `<span class="av-fallback">${esc(owner.emoji || '')}</span>`;
   return `<span class="owner-av ${cls || ''}" style="--c:${esc(owner.color || 'var(--ink)')}">${inner}</span>`;
 }
 
@@ -116,6 +118,17 @@ export function pointsOf(contest) {
   return Math.max(0, (base > 0 ? base : 1) * (mult > 0 ? mult : 1));
 }
 
+// Варианты ответа для вопроса. Обычно они лежат на самом вопросе, но у формата
+// они могут быть постоянными — у «правды или лжи» это всегда «Правда» и «Ложь»,
+// заводить их в кабинете было бы незачем. Формат объявляет такие варианты через
+// OPTIONS, и брать их нужно здесь, а не читать item.options напрямую: телефон
+// гостя так и остался без кнопок, потому что читал только вопрос.
+export function optionsOf(type, item) {
+  const own = (item && item.options) || [];
+  if (own.length) return own;
+  return (type && type.OPTIONS) || [];
+}
+
 // Правильный ответ одной строкой: «Б — Мама» для вариантов, иначе открытый ответ.
 // Раньше эта функция была скопирована в пяти форматах.
 export function correctText(item) {
@@ -129,6 +142,11 @@ export function correctText(item) {
 }
 
 // Разряды числа отбиваем пробелом: 3250 → «3 250».
+export function fmtScore(n) {
+  const value = Math.round((Number(n) || 0) * 2) / 2;
+  return Number.isInteger(value) ? String(value) : String(value).replace('.', ',');
+}
+
 export function fmtNum(n) {
   return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
 }

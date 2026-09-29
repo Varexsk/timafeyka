@@ -40,6 +40,7 @@
           <label class="mode-switch"><input type="checkbox" id="modeTeams"> считать по семьям</label>
           <label class="mode-switch"><input type="checkbox" id="modePhones"> гости отвечают с телефонов</label>
           <label class="mode-switch"><input type="checkbox" id="modeInterludes"> табличка между номерами</label>
+          <label class="mode-switch"><input type="checkbox" id="modeEach"> каждый в семье отвечает сам</label>
         </header>
         <div class="body">
           <div class="g-table" id="teamList"></div>
@@ -54,6 +55,8 @@
         <header><span id="icUsers"></span>Гости<span class="spacer"></span></header>
         <div class="body">
           <div class="g-table" id="guestList"></div>
+          <div class="muted" style="margin-top:.4rem">Галочка — кто выходит на конкурсы. Кого не отметили, тот
+            болеет за свою семью: колесо и «выход участника» его не вызывают, а баллы семье он всё равно приносит.</div>
           <div class="field-row" style="margin-top:.6rem">
             <div class="field" style="margin:0"><input id="newGuestName" placeholder="Имя гостя"></div>
             <button class="a-btn" id="btnAddGuest">Добавить</button>
@@ -110,11 +113,24 @@
           <div class="media-list" id="mediaList"></div>
         </div>
       </section>
+
+      <section class="panel">
+        <header><span id="icNotebook"></span>Блокнот ведущего<span class="spacer"></span>
+          <span class="muted" id="notebookSaved"></span>
+        </header>
+        <div class="body">
+          <div class="muted" style="margin-bottom:.5rem">Сценарий вечера, порядок номеров, реквизит —
+            всё, что нужно тебе и не нужно гостям. Сохраняется само, на телевизор не попадает,
+            входит в бэкап программы.</div>
+          <textarea id="notebook" class="notebook" rows="18"
+            placeholder="Порядок номеров, реплики, что не забыть…"></textarea>
+        </div>
+      </section>
     </div>
   </div>
 
   <div class="picker-back" id="pickerBack">
-    <div class="picker">
+    <div class="picker" role="dialog" aria-modal="true" aria-labelledby="pickerTitle">
       <header>
         <span id="pickerTitle">Выбор картинки</span>
         <span class="spacer"></span>

@@ -7,6 +7,15 @@
 let ctx = null;
 let master = null;
 let ready = false;
+const voices = new Set();
+function trackVoice(source) {
+  voices.add(source);
+  source.addEventListener('ended', () => voices.delete(source), { once: true });
+}
+export function silence() {
+  for (const source of voices) { try { source.stop(); } catch {} }
+  voices.clear();
+}
 
 export function unlock() {
   if (!ctx) {
@@ -46,6 +55,7 @@ function tone(freq, start, dur, type, gain, glideTo) {
   if (!ctx) return;
   const t = ctx.currentTime + start;
   const o = ctx.createOscillator();
+  trackVoice(o);
   const g = ctx.createGain();
   o.type = type || 'sine';
   o.frequency.setValueAtTime(freq, t);
@@ -66,6 +76,7 @@ function noise(start, dur, gain, freq, q) {
   const data = buf.getChannelData(0);
   for (let i = 0; i < len; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / len);
   const src = ctx.createBufferSource();
+  trackVoice(src);
   src.buffer = buf;
   const filter = ctx.createBiquadFilter();
   filter.type = 'bandpass';
@@ -236,6 +247,7 @@ function playBuffer(name, buf) {
   const t = ctx.currentTime;
 
   const src = ctx.createBufferSource();
+  trackVoice(src);
   src.buffer = buf;
   const g = ctx.createGain();
   const fade = Math.min(clip.fade, dur * 0.5);

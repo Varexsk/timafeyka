@@ -12,6 +12,7 @@ const { project, ROLES } = require('./project');
 const ROOT = path.join(__dirname, '..');
 const PUBLIC = path.join(ROOT, 'public');
 const MEDIA = path.join(ROOT, 'media');
+const { albumHtml } = require('./album');
 const PORT = Number(process.env.PORT) || 1717;
 
 const MIME = {
@@ -233,6 +234,13 @@ const server = http.createServer(async (req, res) => {
 
   if (pathname === '/api/media') { sendJson(res, 200, { files: listMedia() }); return; }
 
+  // Семейный альбом: письма, фотографии гостей и итоги вечера одной страницей.
+  // Открывается с любого телефона в доме — QR на телевизоре ведёт сюда же.
+  if (pathname === '/album') {
+    send(res, 200, albumHtml(), { 'Content-Type': 'text/html; charset=utf-8' });
+    return;
+  }
+
   // Телефон меряет по нему задержку сети — она нужна честной жужжалке.
   if (pathname === '/api/ping') { sendJson(res, 200, { now: Date.now() }); return; }
 
@@ -267,6 +275,40 @@ const server = http.createServer(async (req, res) => {
     const result = applyCommand(body.type, body.payload);
     if (result.ok) scheduleBroadcast();
     sendJson(res, result.ok ? 200 : 400, Object.assign({ version: store.version }, result));
+    return;
+  }
+
+  // Фотобудка: снимок с телефона гостя. В отличие от кабинета, сюда пишет
+  // кто угодно из домашней сети, поэтому ограничиваем и размер, и количество,
+  // и складываем отдельно от подготовленных медиа.
+  if (pathname === '/api/booth' && req.method === 'POST') {
+    const ext = (url.searchParams.get('name') || '').toLowerCase().match(/\.(jpe?g|png|webp|gif)$/);
+    if (!ext) { sendJson(res, 400, { ok: false, error: 'Это не фотография' }); return; }
+
+    let buf;
+    try { buf = await readBody(req, 12 * 1024 * 1024); } catch (e) {
+      sendJson(res, 413, { ok: false, error: 'Фотография больше 12 МБ — сними поменьше' });
+      return;
+    }
+
+    const name = 'booth/' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8) + ext[0];
+    const target = safeJoin(MEDIA, name);
+    if (!target) { sendJson(res, 400, { ok: false, error: 'Плохое имя файла' }); return; }
+    try {
+      fs.mkdirSync(path.dirname(target), { recursive: true });
+      fs.writeFileSync(target, buf);
+    } catch (e) {
+      sendJson(res, 500, { ok: false, error: e.message });
+      return;
+    }
+
+    const result = applyCommand('boothPhoto', {
+      src: 'media/' + name,
+      ownerId: url.searchParams.get('owner') || '',
+      guestId: url.searchParams.get('guest') || ''
+    });
+    if (result.ok) scheduleBroadcast();
+    sendJson(res, 200, { ok: true, path: 'media/' + name });
     return;
   }
 

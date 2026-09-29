@@ -20,14 +20,16 @@ export function finale(state) {
       <div class="pts">${g.score} ${icon('star-fill')}</div>
       <div class="podium-block">${place}</div>
     </div>` : '');
+  // Подиум идёт последним: экран финала прижат к полу арены, и на бортике
+  // манежа должны стоять именно тумбы, а не подпись под ними.
   return `
     <div class="eyebrow fade-in">Гран-при циркового вечера</div>
     <h2 class="title-l gold-text pop-in">${esc(first.name)}!</h2>
+    <div class="title-m purple-text fade-in">Победитель получает подарок ${icon('gift')}</div>
     <div class="podium">
       ${col(second, 2, 'podium-2')}
       ${col(first, 1, 'podium-1')}
       ${col(third, 3, 'podium-3')}
     </div>
-    <div class="title-m purple-text fade-in">Победитель получает подарок ${icon('gift')}</div>
   `;
 }

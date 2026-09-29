@@ -24,6 +24,9 @@ function playShow(show) {
     heroShort: show.heroShort,
     lion: show.lion,
     age: show.age,
+    capsule: { open: !!show.capsule?.open, count: show.capsule?.letters?.length || 0 },
+    // Снимки фотобудки не секрет: гость видит, сколько уже наснимала его семья.
+    booth: (show.booth || []).map((p) => ({ id: p.id, src: p.src, ownerId: p.ownerId })),
     mode: show.mode,
     playMode: show.playMode,
     contests: (show.contests || [])
@@ -50,6 +53,21 @@ function playShow(show) {
   };
 }
 
+// Сколько голосов за каждый вариант. Считаем людей, а не семьи: в «помощи
+// зала» интересно именно то, как думает стол.
+function voiceTally(votes) {
+  const out = {};
+  for (const vote of Object.values(votes || {})) {
+    const voices = vote && vote.by ? Object.values(vote.by) : [vote];
+    for (const voice of voices) {
+      if (!voice || voice.v === undefined || voice.v === null) continue;
+      const key = String(voice.v);
+      out[key] = (out[key] || 0) + 1;
+    }
+  }
+  return out;
+}
+
 function itemAt(show, contestId, itemId) {
   const contest = (show.contests || []).find((c) => c.id === contestId);
   if (!contest) return null;
@@ -68,8 +86,21 @@ function playRound(round, ownerId, revealed) {
   };
   // Свой ответ игрок видит всегда — и до раскрытия, и после: иначе на экране
   // «вы не ответили» у того, кто честно ответил.
-  if (ownerId && votes[ownerId] !== undefined) out.mine = votes[ownerId].v;
+  if (ownerId && votes[ownerId] !== undefined) {
+    out.mine = votes[ownerId].v;
+    // Ответы своей семьи — не секрет: на телефоне видно, что бабушка уже
+    // сказала 3200, а семье засчитается среднее. Чужие семьи закрыты.
+    if (votes[ownerId].by) out.family = votes[ownerId].by;
+  }
   if (revealed) out.votes = votes;
+
+  // «50 на 50» потратила конкретная семья — и убранные варианты видит только
+  // она. Какие именно, решил сервер: в ответе телефона нет ничего, по чему
+  // можно вычислить правильный.
+  if (ownerId && round.fifty && round.fifty[ownerId]) out.hidden = round.fifty[ownerId];
+  // «Помощь зала» — общая: как разошлись голоса, видят все, но чей голос
+  // какой — по-прежнему нет.
+  if (round.audience) out.audience = voiceTally(votes);
 
   // Карман формата — общий: колесо должно остановиться одинаково у всех.
   if (round.slice) out.slice = round.slice;
@@ -95,14 +126,20 @@ function playRuntime(runtime, ownerId, show) {
   const key = runtime.contestId + '/' + runtime.itemId;
   const out = {
     screen: runtime.screen,
+    intermission: { open: !!runtime.intermission?.open },
     phase: runtime.phase,
+    // Ролик с выбором уже идёт — телефон закрывает ответы.
+    rolling: !!(runtime.rolling && runtime.phase === 'question'
+      && runtime.rolling.contestId === runtime.contestId && runtime.rolling.itemId === runtime.itemId),
     contestId: runtime.contestId,
     itemId: runtime.itemId,
     fx: runtime.fx,
     timer: runtime.timer || null,
     rehearsal: runtime.rehearsal ? true : null,
     lastAward: runtime.lastAward,
-    round: playRound((runtime.rounds || {})[key], ownerId, revealed)
+    round: playRound((runtime.rounds || {})[key], ownerId, revealed),
+    // Какие джокеры семья уже потратила — чтобы телефон не предлагал их снова.
+    jokers: (runtime.jokers || {})[ownerId] || {}
   };
 
   // Ответ раскрыли — теперь его можно показать и на телефоне, чтобы гость
@@ -114,7 +151,9 @@ function playRuntime(runtime, ownerId, show) {
         answer: Number.isInteger(item.answer) ? item.answer : null,
         answerText: item.answerText || '',
         value: item.value === undefined ? null : item.value,
-        unit: item.unit || ''
+        unit: item.unit || '',
+        // «Кто это сказал»: id гостя-автора.
+        author: item.author || ''
       };
     }
   }

@@ -35,6 +35,7 @@ function declare(id, file, mod) {
     scoring: mod.scoring || { rule: 'manual' },
     participation: mod.participation || {},
     timer: mod.timer || null,
+    revealAfterVideo: !!mod.revealAfterVideo,
     hasServer: false
   };
 }

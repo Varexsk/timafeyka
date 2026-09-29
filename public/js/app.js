@@ -1,15 +1,18 @@
 // Экран телевизора: рисует сцену и слушает команды с пульта.
 
 import * as bus from './bus.js';
+import { mountPartyTV, updatePartyTV } from './party-tv.js';
+import { rosterPage, pagerHtml } from './roster.js';
 import * as sfx from './sfx.js';
 import * as confetti from './confetti.js';
 import * as music from './music.js';
 import { lionSvg, thoughtHtml, pickLine, lionProp } from './lion.js';
 import { buildCtx } from './engine/ctx.js';
+import { audienceHtml } from './engine/participation.js';
 import * as timer from './engine/timer.js';
 import { loadTypes } from './engine/registry.js';
 import * as screens from './screens.js';
-import { esc, owners, pointsOf } from './util.js';
+import { esc, owners, pointsOf, fmtScore } from './util.js';
 import { mountSprite, icon } from './icons.js';
 import { mountArtSprite } from './art.js';
 import { mountAvatarSprite, avatar, hasAvatar } from './avatars.js';
@@ -41,9 +44,18 @@ const PARTY = ['#E63946', '#FFC93C', '#22C1BC', '#FF7BAC', '#4CC96A', '#9B6BFF',
 let state = null;
 let net = null;
 let paintKey = '';
-let seen = { fx: 0, award: 0, video: 0, music: 0, phase: '' };
+// repeat: null означает «ещё не видели ни одного состояния». Иначе первый же
+// повтор вопроса считался бы «старым» и не показывался.
+let seen = { fx: 0, award: 0, video: 0, music: 0, phase: '', repeat: null, audience: '' };
 let sceneKey = '';
 let curtainTimer = 0;
+let entranceTimers = [];
+function endEntrance() {
+  entranceTimers.forEach(clearTimeout);
+  entranceTimers = [];
+  el.stage.classList.remove('theater-introduction');
+  el.interlude.classList.remove('is-on');
+}
 
 // ——— декорации ———
 
@@ -52,7 +64,11 @@ function buildSky() {
   for (let i = 0; i < 46; i++) {
     const size = 0.4 + Math.random() * 0.5;
     const bar = Math.random() < 0.45;
-    html += `<span class="dot ${bar ? 'is-bar' : ''}" style="left:${(Math.random() * 100).toFixed(2)}%;
+    // Точки держатся по краям сцены. В середине живёт вопрос, и конфетти
+    // поверх букв читается не как праздник, а как грязь на экране.
+    const side = Math.random() < 0.5 ? 0 : 70;
+    const left = side + Math.random() * 30;
+    html += `<span class="dot ${bar ? 'is-bar' : ''}" style="left:${left.toFixed(2)}%;
       top:${(Math.random() * 88).toFixed(2)}%;width:${(bar ? size * 0.6 : size).toFixed(2)}rem;
       height:${(bar ? size * 1.6 : size).toFixed(2)}rem;
       background:${PARTY[i % PARTY.length]};
@@ -100,15 +116,41 @@ function balloonSvg(color, deep) {
 }
 
 function buildBalloons() {
+  // Внутри кулис (они занимают по 7.5% с каждого края), иначе шарики
+  // поднимаются за занавесом и их не видно вовсе.
   const set = [
-    { left: '3%', color: '#E63946', deep: '#B02B36', delay: '0s', dur: '26s' },
-    { left: '12%', color: '#FFC93C', deep: '#D9A00F', delay: '9s', dur: '31s' },
-    { left: '88%', color: '#22C1BC', deep: '#15918D', delay: '4s', dur: '29s' },
-    { left: '95%', color: '#FF7BAC', deep: '#D9497F', delay: '15s', dur: '34s' }
+    { left: '10%', color: '#E63946', deep: '#B02B36', delay: '0s', dur: '26s' },
+    { left: '17%', color: '#FFC93C', deep: '#D9A00F', delay: '9s', dur: '31s' },
+    { left: '83%', color: '#22C1BC', deep: '#15918D', delay: '4s', dur: '29s' },
+    { left: '90%', color: '#FF7BAC', deep: '#D9497F', delay: '15s', dur: '34s' }
   ];
   el.balloons.innerHTML = set.map((b) =>
     `<div class="balloon" style="left:${b.left};animation-delay:${b.delay};animation-duration:${b.dur}">
       ${balloonSvg(b.color, b.deep)}</div>`).join('');
+}
+
+// Гирлянда собирается под конкретную ширину: флажки расставлены по точкам
+// кривой в пикселях, поэтому после изменения размера её надо пересобрать.
+// Слушать window resize мало — при входе в полный экран он стреляет не всегда
+// (тем же и лечится канвас конфетти). Пересобираем не чаще раза на кадр:
+// иначе перетаскивание окна пересчитывает семьдесят узлов на каждый пиксель.
+function watchStageWidth() {
+  let width = 0;
+  let queued = 0;
+  const rebuild = () => {
+    queued = 0;
+    const w = el.garland.clientWidth;
+    if (!w || w === width) return;
+    width = w;
+    buildGarland();
+  };
+  const schedule = () => {
+    if (queued) return;
+    queued = requestAnimationFrame(rebuild);
+  };
+  width = el.garland.clientWidth;
+  if (window.ResizeObserver) new ResizeObserver(schedule).observe(el.garland);
+  else window.addEventListener('resize', schedule);
 }
 
 function buildLion() {
@@ -162,37 +204,65 @@ function paint(key, html) {
 // Между номерами кулисы съезжаются, за ними меняется картинка — и разъезжаются.
 function scheduleScene(r, ctx) {
   const key = r.screen === 'show' && ctx.contest ? 'c:' + ctx.contest.id : 's:' + r.screen;
-  if (key === sceneKey) { paintScene(r, ctx); return; }
+  if (key === sceneKey) {
+    if (r.phase !== 'intro' || r.intermission?.open || r.ceremony?.open || r.capsuleStage?.open || r.partyDraw?.open || r.album?.open) endEntrance();
+    if (!curtainTimer) paintScene(r, ctx);
+    return;
+  }
   const first = !sceneKey;
   sceneKey = key;
-  if (first) { paintScene(r, ctx); return; }
+  endEntrance();
   el.stage.classList.add('is-curtain');
+  if (first) paintScene(r, ctx);
 
-  // Между номерами — цирковая табличка на закрытом занавесе. Без неё
-  // конкурсы сливаются в один длинный список вопросов.
-  const plate = r.screen === 'show' && ctx.contest && state.show.interludes !== false
+  // Название появляется уже за открывающимся занавесом, в затемнённом зале.
+  const plate = r.screen === 'show' && r.phase === 'intro' && ctx.contest && state.show.interludes !== false
     ? { top: ctx.contest.subtitle || `Номер ${ctx.contestIndex + 1}`, main: ctx.contest.title }
     : null;
   el.interlude.innerHTML = plate
     ? `<div class="interlude-plate"><div class="top">${esc(plate.top)}</div><div class="main">${esc(plate.main)}</div></div>`
     : '';
-  el.interlude.classList.toggle('is-on', !!plate);
-  if (plate) sfx.play('drumroll');
-
+  el.interlude.classList.add('cinema-title');
+  // Табличка объявляет номер — пусть объявляет и его цвет.
+  if (plate && ctx.type && ctx.type.accent) {
+    el.interlude.style.setProperty('--accent', ctx.type.accent);
+  } else {
+    el.interlude.style.removeProperty('--accent');
+  }
   clearTimeout(curtainTimer);
   curtainTimer = setTimeout(() => {
+    curtainTimer = 0;
     paintScene(state.runtime, currentCtx());
-    el.interlude.classList.remove('is-on');
+    const live = state.runtime;
+    const showEntrance = plate && live.screen === 'show' && live.phase === 'intro' && !live.intermission?.open && !live.ceremony?.open && !live.capsuleStage?.open && !live.partyDraw?.open && !live.album?.open;
+    if (showEntrance) {
+      el.stage.classList.add('theater-introduction');
+      sfx.play('drumroll');
+      const calm = state.show.director?.motion === 'calm';
+      entranceTimers.push(setTimeout(() => el.interlude.classList.add('is-on'), calm ? 100 : 650));
+      entranceTimers.push(setTimeout(() => {
+        endEntrance();
+        document.dispatchEvent(new Event('theater:reveal'));
+      }, calm ? 1700 : 4600));
+    }
     el.stage.classList.remove('is-curtain');
-  }, plate ? 1500 : 460);
+    if (!showEntrance) document.dispatchEvent(new Event('theater:reveal'));
+  }, first ? 500 : 1350);
 }
 
+// Цвет номера. Каждый формат объявляет свой accent — на нём и держится всё
+// различие между пятнадцатью конкурсами: подсветка купола, полоса на афише,
+// кант карточки, табличка между номерами. Раньше accent доезжал только до
+// заливки с прозрачностью 0.07 и не был виден ни вблизи, ни с дивана.
+// Свойство обязательно снимаем, когда номера нет: иначе цвет прошлого
+// конкурса протекает на заставку, таблицу лидеров и финал.
 function applyAccent(r, ctx) {
   const accent = r.screen === 'show' && ctx.contest ? ctx.type.accent : '';
   if (accent) {
     document.documentElement.style.setProperty('--accent', accent);
     el.stage.classList.add('has-accent');
   } else {
+    document.documentElement.style.removeProperty('--accent');
     el.stage.classList.remove('has-accent');
   }
 }
@@ -219,17 +289,18 @@ function setProp(name) {
 }
 
 function ownersKey() {
-  return JSON.stringify(owners(state).map((o) => o.name + ':' + (o.score || 0)));
+  return JSON.stringify(owners(state)) + '|' + state.runtime.rosterPage;
 }
 
 function paintScene(r, ctx) {
   claimScreen(r.screen === 'show' && ctx.contest ? 'c:' + ctx.contest.id : 's:' + r.screen);
 
   if (r.screen === 'welcome') paint('welcome|' + (net ? net.remoteUrl + '|' + net.playUrl : '') + '|' + ctx.playMode, screens.welcome(state, net));
-  else if (r.screen === 'guests') paint('guests|' + JSON.stringify(state.guests.map((g) => g.name + g.avatar + g.teamId)) + ownersKey(), screens.guests(state));
+  else if (r.screen === 'guests') paint('guests|' + JSON.stringify(state.guests.map((g) => g.name + g.avatar + g.teamId + (g.playing === false ? '-' : '+'))) + ownersKey(), screens.guests(state));
   else if (r.screen === 'leaderboard') paint('board|' + ownersKey(), screens.leaderboard(state));
   else if (r.screen === 'finale') paint('finale|' + ownersKey(), screens.finale(state));
   else if (r.screen === 'diploma') paint('diploma|' + ownersKey(), screens.diploma(state));
+  else if (r.screen === 'recap') paint('recap|' + ownersKey() + '|' + ((r.stats && r.stats.questions || []).length), screens.recap(state));
   else if (!ctx.contest) paint('empty', '<div class="hint">Ни одного включённого конкурса — добавь их в кабинете</div>');
   else if (r.phase === 'intro' || !ctx.item) paint('intro|' + ctx.contest.id, screens.intro(ctx.contest));
   else {
@@ -256,8 +327,15 @@ function render() {
   if (document.title !== ctx.names.title) document.title = ctx.names.title;
 
   el.screen.classList.toggle('screen--wide', bare);
+  // Подиум должен стоять на бортике манежа, а не висеть в воздухе посреди
+  // сцены: финал прижимаем к полу арены.
+  el.screen.classList.toggle('screen--floor', r.screen === 'finale');
   el.lionWrap.classList.toggle('is-hidden', bare);
-  el.scorebar.style.display = ['welcome', 'finale', 'diploma', 'leaderboard'].includes(r.screen) ? 'none' : '';
+  const sidebar = r.screen === 'show' && owners(state).length > 0;
+  el.stage.classList.toggle('has-roster', sidebar);
+  el.stage.dataset.screen = r.screen;
+  el.stage.dataset.phase = r.phase;
+  el.scorebar.hidden = !sidebar;
   document.body.classList.toggle('is-rehearsal', !!r.rehearsal);
 
   timer.update(r);
@@ -276,7 +354,7 @@ function render() {
   else if (r.screen === 'show' && ctx.contest && r.phase === 'intro') say(ctx.contest.lionLine || pickLine('intro', ctx.contestIndex));
   else if (r.screen === 'show' && ctx.contest && ctx.item) {
     say(ctx.type.lion ? ctx.type.lion(ctx) : pickLine(r.phase === 'reveal' ? 'reveal' : 'question', ctx.index));
-  } else say(pickLine(r.screen === 'diploma' ? 'finale' : r.screen, ctx.contestIndex));
+  } else say(pickLine(r.screen, ctx.contestIndex));
 }
 
 function chipAvatarInner(g) {
@@ -340,16 +418,21 @@ function dot(o, on) {
   return `<span class="rb-dot ${on ? 'is-on' : ''}" style="--c:${esc(o.color || 'var(--ink)')}">${chipAvatarInner(o)}</span>`;
 }
 
+let scorebarKey = '';
 function renderScorebar() {
   // Подсвечиваем всех, кому только что начислили: их может быть несколько сразу.
   const last = state.runtime.lastAward;
   const hot = new Set(((last && last.entries) || []).map((e) => e.id));
-  el.scorebar.innerHTML = owners(state).map((g) => `
+  const ctx = currentCtx();
+  const list = rosterPage(state).list;
+  const markup = `<div class="roster-heading"><div><span class="roster-kicker">Звёзды представления</span><h2>На арене</h2></div><span class="roster-total">${owners(state).length}<small>${state.show.mode === 'guests' ? 'Гости' : 'Семьи'}</small></span></div><div class="roster-list">` + list.map((g) => `
     <div class="chip ${hot.has(g.id) ? 'is-hot' : ''}" data-guest="${esc(g.id)}" style="--c:${esc(g.color || 'var(--ink)')}">
       ${chipAvatar(g)}
-      <span>${esc(g.name)}</span>
-      <span class="pts">${g.score || 0}</span>
-    </div>`).join('');
+      <span class="chip-name">${esc(g.name)}${ctx.playMode === 'phones' && ctx.hasVote(g.id) ? '<small>Ответили ✓</small>' : ''}</span>
+      <span class="pts">${icon('star-fill')}${fmtScore(g.score)}</span>
+    </div>`).join('') + '</div><div class="roster-foot" aria-hidden="true"><img src="/img/magic-hat.svg" alt="" width="240" height="200"><span>Каждый ответ —<br>маленькое чудо!</span></div>' + pagerHtml(state);
+  // Таймер и ответы других страниц не должны заново запускать появление карточек.
+  if (markup !== scorebarKey) { el.scorebar.innerHTML = markup; scorebarKey = markup; }
 }
 
 function renderPanel() {
@@ -358,7 +441,7 @@ function renderPanel() {
     <div class="row">
       <span class="who">${i < 9 ? `<kbd>${i + 1}</kbd> ` : ''}${esc(g.name)}</span>
       <button class="btn btn--ghost" data-award="${esc(g.id)}" data-delta="-1">${icon('minus')}</button>
-      <span class="pts">${g.score || 0}</span>
+      <span class="pts">${fmtScore(g.score)}</span>
       <button class="btn btn--primary" data-award="${esc(g.id)}" data-delta="1">${icon('plus')}</button>
     </div>`).join('');
 }
@@ -450,8 +533,46 @@ function popPoint(chip, delta) {
   setTimeout(() => node.remove(), 1200);
 }
 
+// Вопрос крупно поверх сцены на несколько секунд. Не заменяет экран: за
+// плашкой остаётся всё, что было, — ответы гостей никуда не делись.
+function flashPanel(html, ms, extra) {
+  const old = document.querySelector('.repeat-flash');
+  if (old) old.remove();
+  const node = document.createElement('div');
+  node.className = 'repeat-flash ' + (extra || '');
+  node.innerHTML = html;
+  el.stage.appendChild(node);
+  requestAnimationFrame(() => node.classList.add('is-on'));
+  setTimeout(() => {
+    node.classList.remove('is-on');
+    setTimeout(() => node.remove(), 600);
+  }, ms);
+}
+
+function flashQuestion(text) {
+  flashPanel(`<div class="repeat-flash-label">Повторяю вопрос</div>
+    <div class="repeat-flash-q">${esc(text || '')}</div>`, 4200);
+}
+
 function reactions() {
   const r = state.runtime;
+
+  // «Помощь зала»: показываем расклад крупно и ненадолго — чтобы прочитали
+  // с дивана и вернулись к вариантам.
+  const roundKey = r.contestId + '/' + r.itemId;
+  const round = (r.rounds || {})[roundKey];
+  if (round && round.audience && seen.audience !== roundKey) {
+    seen.audience = roundKey;
+    const html = audienceHtml(currentCtx());
+    if (html) flashPanel(html, 8000, 'audience-flash');
+  }
+
+  const repeatSeq = (r.repeat && r.repeat.seq) || 0;
+  if (seen.repeat === null) seen.repeat = repeatSeq;      // запомнили, с чем открылись
+  else if (repeatSeq !== seen.repeat) {
+    seen.repeat = repeatSeq;
+    flashQuestion(r.repeat.q);
+  }
 
   if (r.fx && r.fx.seq !== seen.fx) {
     seen.fx = r.fx.seq;
@@ -539,6 +660,8 @@ function pointsNow() {
 function onKey(e) {
   ensureSound();
   const k = e.key;
+  if (e.target.closest('button, input, textarea, select')) return;
+  if (k === 'ArrowUp' || k === 'ArrowDown') { bus.send('rosterPage', { delta: k === 'ArrowUp' ? -1 : 1 }); e.preventDefault(); return; }
   if (k === 'ArrowRight' || k === ' ' || k === 'PageDown' || k === 'Enter') { bus.send('next'); e.preventDefault(); return; }
   if (k === 'ArrowLeft' || k === 'PageUp') { bus.send('prev'); e.preventDefault(); return; }
   if (k === 'f' || k === 'F' || k === 'а' || k === 'А') { toggleFullscreen(); return; }
@@ -600,6 +723,7 @@ function watchCursor() {
 // ——— старт ———
 
 function init() {
+  mountPartyTV();
   mountSprite();
   mountArtSprite();
   mountAvatarSprite();
@@ -621,9 +745,13 @@ function init() {
 
   el.nudge.innerHTML = icon('sound') + ' Включить звук';
 
-  window.addEventListener('resize', () => { buildGarland(); });
+  watchStageWidth();
   document.addEventListener('keydown', onKey);
   document.addEventListener('click', ensureSound);
+  document.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-roster]');
+    if (b) bus.send('rosterPage', { delta: Number(b.dataset.roster) });
+  });
   // Ловим в фазе перехвата: элементы вопроса пересоздаются на каждом рендере.
   document.addEventListener('play', syncMusicDuck, true);
   document.addEventListener('pause', syncMusicDuck, true);
@@ -650,6 +778,7 @@ function init() {
     state = next;
     render();
     reactions();
+    updatePartyTV(next);
   });
   bus.start('tv');
 

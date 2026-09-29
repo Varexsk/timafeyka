@@ -17,7 +17,7 @@
 .dot {
   position: absolute;
   border-radius: 50%;
-  opacity: 0.5;
+  opacity: 0.32;
   animation: dot-drift 7s ease-in-out infinite;
 }
 .dot.is-bar { border-radius: 0.12rem; }
@@ -49,7 +49,7 @@
   top: 0;
   left: -2%;
   width: 104%;
-  height: 6.6rem;
+  height: var(--tent-h);
   background: repeating-conic-gradient(from 0deg at 50% -8rem,
     var(--red) 0 3.2deg, #FFFDF7 3.2deg 6.4deg);
   -webkit-mask:
@@ -85,33 +85,45 @@
   0%, 100% { transform: rotate(-4deg); }
   50% { transform: rotate(4deg); }
 }
+/* Лампочки мигают прозрачностью, а не filter. Тридцать с лишним элементов,
+   бесконечно анимирующих brightness/saturate, пересчитываются на каждом кадре
+   и не уходят на композитор — вместе с канвасом конфетти это давало рывки
+   ровно там, где они дороже всего: на конкурсе с видео. */
 .bulb {
   position: absolute;
   width: 0.8rem;
   height: 1rem;
   margin: -0.4rem 0 0 -0.4rem;
   border-radius: 45% 45% 55% 55% / 40% 40% 60% 60%;
+  will-change: opacity;
   animation: glow 2.2s ease-in-out infinite;
 }
 @keyframes glow {
-  0%, 100% { filter: brightness(0.85) saturate(0.8); }
-  50% { filter: brightness(1.35) saturate(1.3); }
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 1; }
 }
 
 /* ——— кулисы ——— */
 
 .curtain {
   position: absolute;
-  top: 0;
+  /* Из-под обода купола: занавес физически не может висеть перед потолком,
+     а раньше кулисы шли поверх шатра на всю высоту и читались как две
+     красные колонны. */
+  top: calc(var(--tent-h) - 1.2rem);
   bottom: 0;
-  width: 7.5%;
+  width: var(--wing-w);
   pointer-events: none;
   background: repeating-linear-gradient(90deg,
     #C9303C 0, #E63946 1.1rem, #FF5A66 2.1rem, #E63946 3.1rem, #C9303C 4.2rem);
-  box-shadow: inset 0 2rem 3rem rgba(58, 35, 80, 0.25);
+  /* Тень сверху сажает занавес под обод купола, снизу — притапливает его
+     за бортик манежа, чтобы кулиса читалась тканью, а не красной колонной. */
+  box-shadow:
+    inset 0 1.8rem 1.8rem -0.8rem rgba(40, 12, 20, 0.45),
+    inset 0 -2.2rem 2rem -1.2rem rgba(40, 12, 20, 0.28);
 }
-.curtain--left { left: 0; border-radius: 0 30% 10% 0 / 0 8% 3% 0; }
-.curtain--right { right: 0; border-radius: 30% 0 0 10% / 8% 0 0 3%; }
+.curtain--left { left: 0; border-radius: 0 12% 6% 0 / 0 4% 2% 0; }
+.curtain--right { right: 0; border-radius: 12% 0 0 6% / 4% 0 0 2%; }
 .curtain::after {
   content: '';
   position: absolute;
@@ -126,26 +138,57 @@
 .curtain--left::after { right: -1rem; }
 .curtain--right::after { left: -1rem; }
 
-/* ——— манеж внизу ——— */
+/* ——— манеж внизу ———
+
+   Пол, на котором стоит всё остальное: львёнок, подиум в финале, плашки
+   с баллами. Раньше манеж был бледным градиентом с еле заметной полоской —
+   на телевизоре его просто не было видно, и подиум обрывался в воздухе.
+   Теперь это настоящая арена: опилки, красно-белый бортик по дуге и тень
+   от бортика на песок. */
 
 .ring {
   position: absolute;
-  left: -5%;
-  right: -5%;
+  left: -6%;
+  right: -6%;
   bottom: 0;
-  height: 9rem;
+  height: var(--ring-h);
   pointer-events: none;
-  background: linear-gradient(180deg, rgba(255, 224, 170, 0) 0%, #F6DFB4 45%, #EFD3A0 100%);
-  border-radius: 50% 50% 0 0 / 3.5rem 3.5rem 0 0;
 }
+
+/* Бортик и опилки нарисованы одной парой слоёв: снизу лежит полосатая фигура
+   во весь манеж, сверху — песок с той же кривизной, но опущенный на высоту
+   бортика. Видимой остаётся ровно полоса постоянной толщины, идущая по дуге.
+   Кривые обязаны совпадать: стоит их развести — и бортик рассыпается
+   в пунктир из отдельных прямоугольников. */
+
+/* бортик. Светлые сектора обязательно белее фона: с кремовым #FFF6E5 они
+   сливались со сценой, и от бортика оставался пунктир из красных полосок. */
 .ring::before {
   content: '';
   position: absolute;
-  inset: 2.4rem 12% auto 12%;
-  height: 0.5rem;
-  border-radius: 999px;
-  background: var(--red);
-  opacity: 0.28;
+  inset: 0;
+  border-radius: 50% 50% 0 0 / 2.6rem 2.6rem 0 0;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.5) 0 0.22rem, rgba(255, 255, 255, 0) 0.22rem 60%, rgba(58, 35, 80, 0.12) 100%),
+    repeating-linear-gradient(90deg,
+      var(--red) 0 1.9rem, #FFFDF7 1.9rem 3.8rem);
+  /* Белые сектора почти не отличаются от кремовой сцены, поэтому бортик держит
+     не цвет полос, а контур: тёмные линии сверху и снизу. Без них от бортика
+     остаётся пунктир из красных прямоугольников. */
+  box-shadow:
+    inset 0 0.18rem 0 var(--ink),
+    inset 0 -0.18rem 0 var(--ink);
+}
+
+/* опилки */
+.ring::after {
+  content: '';
+  position: absolute;
+  inset: var(--curb-h) 0 0 0;
+  border-radius: 50% 50% 0 0 / 2.6rem 2.6rem 0 0;
+  background:
+    radial-gradient(120% 70% at 50% 0%, rgba(58, 35, 80, 0.22) 0%, rgba(58, 35, 80, 0) 55%),
+    linear-gradient(180deg, #F3D9A8 0%, #E8C888 100%);
 }
 
 /* ——— львёнок и облако мыслей ——— */
@@ -153,7 +196,9 @@
 .lion-wrap {
   position: absolute;
   left: 1.5%;
-  bottom: 0;
+  /* Ноги на опилках, и ещё немного места под тень и покачивание: раньше
+     львёнок стоял ровно на нижнем крае кадра и обрезался вместе с лапами. */
+  bottom: 2.2rem;
   width: 21rem;
   pointer-events: none;
   z-index: 6;
@@ -319,13 +364,19 @@
 
 /* ——— цветной подмес под текущий конкурс ——— */
 
+/* Свет зала под текущий номер. Заливка лежит под куполом, кулисами, манежем
+   и контентом — красит только фон сцены, поэтому её можно давать заметной.
+   На 0.07, как было раньше, цвет номера не читался вообще. */
 .accent-wash {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: var(--accent, transparent);
   opacity: 0;
   mix-blend-mode: multiply;
-  transition: background 0.6s ease, opacity 0.6s ease;
+  /* Только свет сверху, из-под купола. Заливка на всю высоту глушила тёплый
+     крем сцены и уводила манеж с кулисами в серое. */
+  background: radial-gradient(110% 55% at 50% 0%,
+    var(--accent, transparent) 0%, transparent 65%);
+  transition: opacity 0.6s ease;
 }
-.stage.has-accent .accent-wash { opacity: 0.07; }
+.stage.has-accent .accent-wash { opacity: 0.22; }

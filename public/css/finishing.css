@@ -1,0 +1,79 @@
+/* Детали цирковой афиши: бумага, золото, свет и небольшие сценические жесты. */
+.screen .eyebrow { display: flex; align-items: center; justify-content: center; gap: .9rem; }
+.screen .eyebrow::before, .screen .eyebrow::after { content: '✦'; font-size: .8em; color: var(--yellow-deep); letter-spacing: 0; }
+.question { text-wrap: balance; text-shadow: 0 .1rem 0 #fff9; }
+.screen .title-l, .screen .title-xl { text-wrap: balance; }
+.screen .hint { text-wrap: balance; }
+.q-counter { background: linear-gradient(160deg, #A87AFF, #8250D9); border-color: #7041B8; box-shadow: 0 .22rem 0 #5c36862b, inset 0 .12rem 0 #ffffff50; }
+
+/* Входной билет: медальон и две локальные иллюстрации. */
+.welcome-center { display: flex; align-items: center; justify-content: center; gap: 3rem; width: 100%; }
+.circus-illustration { width: 13rem; height: 11rem; object-fit: contain; filter: drop-shadow(0 .35rem .2rem #3a23500e); animation: prop-float 5s ease-in-out infinite; }
+.art-magic { animation-delay: -2.5s; }
+.birthday-seal { position: relative; display: grid; justify-items: center; gap: .5rem; }
+.birthday-seal::before { content: ''; position: absolute; width: 12rem; height: 12rem; top: -.75rem; border: .13rem dashed var(--yellow-deep); border-radius: 50%; animation: seal-turn 60s linear infinite; }
+.birthday-seal .welcome-age { background: radial-gradient(circle at 35% 25%, #FFECA6, var(--yellow) 70%); border: .3rem double var(--red); box-shadow: 0 .5rem 0 #d9a00f55, 0 0 0 .35rem #fff7; }
+.birthday-seal > span { position: relative; margin-top: .55rem; padding: .3rem 1rem; background: var(--red); color: white; border-radius: .3rem; font-family: var(--font-slab); font-size: .85rem; letter-spacing: .06em; box-shadow: var(--sticker-sm); }
+.stage[data-screen="welcome"] .screen { gap: .85rem; }
+.connect-card { border-style: dashed; border-color: #d9a00f99; background: linear-gradient(115deg, #fff, #fff9ec); box-shadow: 0 .35rem 0 #d9a00f22; }
+.connect-card .qr { padding: .3rem; background: white; }
+
+/* Афиша с внутренним золотым кантом и световым медальоном. */
+.poster { background: radial-gradient(ellipse at 50% 0, #fff1cc, transparent 65%), #fffdf7; padding: 2rem 2.5rem; border-width: .2rem; box-shadow: 0 .45rem 0 #3a235023, 0 1.2rem 2.5rem #3a235014; }
+.poster::after { content: ''; position: absolute; inset: .65rem; border: 1px solid #d9a00f66; border-radius: .8rem; pointer-events: none; }
+.poster-emblem { display: grid; place-items: center; width: 6rem; height: 6rem; margin: 0 auto .6rem; border-radius: 50%; background: #fff9e8; border: .15rem dashed var(--yellow-deep); box-shadow: 0 0 0 .35rem #ffc93c22; animation: emblem-sway 5s ease-in-out infinite; }
+.poster-emblem .poster-ic { margin: 0; width: 3.7rem; height: 3.7rem; }
+.poster .title-l { font-size: 3.8rem; margin: .6rem 0; }
+.poster .eyebrow { font-size: 1.15rem; }
+.poster .rules { font-size: 1.4rem; }
+
+/* Табло как билет с перфорацией. Лампочки занимают только верхний кант. */
+.scorebar { background: linear-gradient(160deg, #fffdf6, #fff1d7); border-color: #e63946; box-shadow: 0 .45rem 0 #b02b3626, 0 1rem 2rem #3a235015, inset 0 0 0 .35rem #fff9; padding: 1.15rem; }
+.scorebar::before { content: ''; position: absolute; left: 1.5rem; right: 1.5rem; top: -.35rem; height: .7rem; background: radial-gradient(circle, #fff8c1 0 24%, #ffc93c 27% 45%, transparent 49%) 0 0 / 1.5rem .7rem repeat-x; filter: drop-shadow(0 0 .25rem #ffc93c); animation: marquee-glow 3s ease-in-out infinite; }
+.roster-heading { padding: .2rem .2rem .9rem; border-bottom: .12rem dashed #d9a00f77; }
+.roster-kicker { display: block; color: var(--ink-soft); font-family: var(--font-slab); font-size: .7rem; text-transform: uppercase; letter-spacing: .09em; margin-bottom: .25rem; }
+.roster-heading .roster-total { display: grid; justify-items: center; font-family: var(--font-num); font-size: 1.7rem; line-height: 1; color: var(--red); }
+.roster-total small { font: 800 .7rem var(--font-text); color: var(--ink-soft); margin-top: .3rem; }
+.scorebar { gap: .65rem; }
+.roster-list { gap: .65rem; flex-shrink: 0; }
+.scorebar .chip { border-width: .12rem; background: linear-gradient(110deg, white, #fffdfa); box-shadow: 0 .22rem 0 #3a235014; }
+.scorebar .chip .av { background: #fff6e5; box-shadow: 0 0 0 .14rem #fff, 0 0 0 .22rem var(--c); margin: .12rem; }
+.scorebar .chip .pts { display: flex; align-items: center; justify-content: flex-end; gap: .25rem; font-size: 1.25rem; }
+.chip .pts .ic { width: .8rem; height: .8rem; color: var(--yellow-deep); }
+.scorebar .chip.is-hot { background: linear-gradient(110deg, #fff0ac, #ffd76a); box-shadow: 0 .25rem 0 var(--yellow-deep), 0 0 1.1rem #ffc93c44; }
+.roster-foot { display: flex; flex-shrink: 0; align-items: center; justify-content: center; gap: .5rem; margin-top: auto; color: var(--ink-soft); }
+.roster-foot img { width: 3.6rem; height: 3rem; object-fit: contain; animation: prop-float 6s ease-in-out infinite; }
+.roster-foot span { font-family: var(--font-slab); font-size: .85rem; line-height: 1.4; }
+.scorebar .roster-pager { margin-top: 0; padding-top: .7rem; border-top: .12rem dashed #d9a00f66; }
+.roster-pager .btn { border-color: #d9a00f55; background: #fffdf6; }
+
+/* Карточки выходят на манеж по очереди, правильный ответ сохраняет свой жест. */
+.option { background: linear-gradient(130deg, #fff, #fffdf7); box-shadow: 0 .3rem 0 #3a23501b, inset 0 .15rem 0 white; }
+.option .letter { box-shadow: inset 0 .15rem 0 #ffffff40, 0 .15rem 0 #3a23501a; }
+.option:not(.is-correct) { animation: card-arrive .45s ease backwards; }
+.option:nth-child(2), .guest-card:nth-child(2), .family-card:nth-child(2) { animation-delay: .06s; }
+.option:nth-child(3), .guest-card:nth-child(3), .family-card:nth-child(3) { animation-delay: .12s; }
+.option:nth-child(4), .guest-card:nth-child(4), .family-card:nth-child(4) { animation-delay: .18s; }
+.option:nth-child(5), .guest-card:nth-child(5), .family-card:nth-child(5) { animation-delay: .24s; }
+.option:nth-child(6), .guest-card:nth-child(6), .family-card:nth-child(6) { animation-delay: .3s; }
+.guest-card, .family-card { position: relative; background: linear-gradient(145deg, white, #fff7e7); animation: card-arrive .5s ease backwards; box-shadow: 0 .35rem 0 #3a23501a; }
+.family-card::after, .guest-card::after { content: '✦'; position: absolute; right: .7rem; top: .5rem; color: var(--yellow-deep); font-size: 1.2rem; }
+.board-row { background: linear-gradient(110deg, #fff, #fff9ed); }
+.board-row.is-first { background: linear-gradient(110deg, #ffe391, #fff2b8); box-shadow: 0 .3rem 0 #d9a00f44; }
+.podium-block { background-image: linear-gradient(110deg, #ffffff33, transparent 60%); box-shadow: inset .25rem 0 0 #ffffff33, var(--sticker); }
+.podium-1 .crown { filter: drop-shadow(0 0 .6rem #ffc93c66); }
+.media-frame { box-shadow: 0 .5rem 0 #3a235022, 0 .8rem 1.5rem #3a235015; }
+.timer-ring { background: #fff9e8dd; border-radius: 50%; box-shadow: 0 .3rem 1rem #3a235018; }
+.timer-ring.is-warn { box-shadow: 0 0 1.5rem #e6394644; }
+.btn:focus-visible { outline: .2rem solid var(--teal-deep); outline-offset: .2rem; }
+@media (hover: hover) { .roster-pager .btn:hover { background: var(--yellow); transform: translateY(-.1rem); } }
+@keyframes prop-float { 0%, 100% { transform: translateY(0) rotate(-3deg); } 50% { transform: translateY(-.45rem) rotate(3deg); } }
+@keyframes seal-turn { to { transform: rotate(360deg); } }
+@keyframes emblem-sway { 0%, 100% { transform: rotate(-5deg); } 50% { transform: rotate(5deg); } }
+@keyframes marquee-glow { 0%, 100% { filter: drop-shadow(0 0 .15rem #ffc93c88); } 50% { filter: drop-shadow(0 0 .45rem #ffc93c); } }
+@keyframes card-arrive { from { opacity: 0; transform: translateY(.7rem); } to { opacity: 1; transform: translateY(0); } }
+@media (max-aspect-ratio: 4/3) { .welcome-center { gap: 1rem; } .circus-illustration { width: 10rem; } .roster-foot span { font-size: .75rem; } }
+@media (prefers-reduced-motion: reduce) {
+  body:not(.theater-full) *, body:not(.theater-full) *::before, body:not(.theater-full) *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}
+@media print { .circus-illustration, .roster-foot { display: none !important; } }

@@ -3,10 +3,10 @@
 import * as bus from './bus.js';
 import { types, getType, loadTypes } from './engine/registry.js';
 import { esc, names } from './util.js';
-import { renderFields, applyInput, applyClick, problems, needsRerender } from './engine/fields.js';
+import { renderFields, applyInput, applyClick, problems, needsRerender, videoPrevId } from './engine/fields.js';
 import { mountSprite, icon } from './icons.js';
 import { mountArtSprite, art, hasArt, ART_NAMES, ART_LABELS } from './art.js';
-import { mountAvatarSprite, avatar, hasAvatar, AVATAR_IDS, AVATAR_LABELS } from './avatars.js';
+import { mountAvatarSprite, avatar, hasAvatar, isPhotoAvatar, photoAvatar, AVATAR_IDS, AVATAR_LABELS } from './avatars.js';
 
 await loadTypes();
 
@@ -16,6 +16,7 @@ let state = null;
 let draft = null;        // копия редактируемого конкурса
 let selectedId = null;
 let media = [];
+let musicFiles = [];
 let saveTimer = 0;
 let openItems = new Set();
 let picker = null;       // {kind, onPick}
@@ -148,18 +149,23 @@ function selectContest(id, openIndex) {
 
 // ——— редактор ———
 
+// Метки снимаем с плеера самого вопроса; своего видео нет — берём общее.
+function previewVideo(i) {
+  return (i === undefined ? null : $(videoPrevId(i))) || $(videoPrevId());
+}
+
 // Всё, что нужно движку полей: где взять данные и как отозваться на кнопки.
-function fieldApi() {
+function fieldApi(list) {
   return {
     state,
     contest: draft,
-    media,
+    media: list || media,
     openPicker,
     rerender: renderEditor,
     save: saveNow,
-    videoTime: () => { const v = $('vidPrev'); return v ? v.currentTime : null; },
-    videoSeek: (t) => {
-      const v = $('vidPrev');
+    videoTime: (i) => { const v = previewVideo(i); return v ? v.currentTime : null; },
+    videoSeek: (t, i) => {
+      const v = previewVideo(i);
       if (!v) return;
       v.currentTime = t;
       v.play().catch(() => {});
@@ -193,6 +199,18 @@ function itemCard(item, i, type) {
   </div>`;
 }
 
+// Поля, которые есть у любого конкурса, независимо от формата. Формат про них
+// не знает, но рисуются и сохраняются они тем же механизмом, что и его
+// собственные, — иначе «Музыка номера» не попала бы ни в один обработчик.
+const COMMON_FIELDS = [
+  { k: 'media', f: 'themeTrack', kind: 'audio', label: 'Музыка номера',
+    hint: 'Заиграет сама, когда на экране появится афиша этого конкурса, и приглушится на вопросах.' }
+];
+
+function contestFields(type) {
+  return COMMON_FIELDS.concat(type.fields || []);
+}
+
 function renderEditor() {
   const box = $('editor');
   if (!draft) {
@@ -214,11 +232,15 @@ function renderEditor() {
         <input type="number" min="1" max="5" data-f="multiplier" value="${Number(draft.multiplier) || 1}"></div>
     </div>
     <div class="muted" style="margin:-.3rem 0 .6rem">Множитель больше единицы — это «ва-банк»: на афише появится золотая плашка, а баллы за номер удвоятся.</div>
+    <label class="mode-switch" style="margin-bottom:.6rem"><input type="checkbox" data-f="speedBonus" ${draft.speedBonus ? 'checked' : ''}> самому быстрому верному ответу — лишний балл</label>
     <div class="field"><label>Правила на афише</label>
       <textarea rows="2" data-f="rules">${esc(draft.rules || '')}</textarea></div>
+    <div class="field"><label>Заметки ведущему — видны только в кабинете и на пульте</label>
+      <textarea rows="3" data-f="hostNotes" placeholder="Что сказать, какой реквизит приготовить, какую музыку включить">${esc(draft.hostNotes || '')}</textarea></div>
     <div class="field"><label>Что скажет ${esc(names(state).lion)} на афише</label>
       <input data-f="lionLine" value="${esc(draft.lionLine || '')}"></div>
 
+    ${renderFields(COMMON_FIELDS, draft, undefined, fieldApi(musicFiles))}
     ${renderFields(type.fields, draft, undefined, fieldApi())}
 
     <div class="section-title">Вопросы</div>
@@ -232,9 +254,11 @@ function renderEditor() {
 // ——— семьи ———
 
 function ownerRow(o, kind) {
-  const inner = hasAvatar(o.avatar)
-    ? avatar(o.avatar)
-    : `<span style="display:grid;place-items:center;width:100%;height:100%">${esc(o.emoji || '')}</span>`;
+  const inner = isPhotoAvatar(o.avatar)
+    ? photoAvatar(o.avatar)
+    : hasAvatar(o.avatar)
+      ? avatar(o.avatar)
+      : `<span style="display:grid;place-items:center;width:100%;height:100%">${esc(o.emoji || '')}</span>`;
   const teamPicker = kind === 'guest' ? `
     <select class="team-in" data-g="${esc(o.id)}" data-gf="teamId">
       <option value="">— без семьи —</option>
@@ -242,11 +266,15 @@ function ownerRow(o, kind) {
     `<option value="${esc(t.id)}" ${t.id === o.teamId ? 'selected' : ''}>${esc(t.name)}</option>`).join('')}
     </select>` : '';
   return `
-    <div class="g-line">
+    <div class="g-line" data-owner="${esc(o.id)}">
       <button class="g-av" data-avatar="${esc(o.id)}" data-kind="${kind}"
               style="--c:${esc(o.color || '#ccc')}" title="Сменить зверя">${inner}</button>
       <input type="text" data-${kind === 'guest' ? 'g' : 't'}="${esc(o.id)}" data-gf="name" value="${esc(o.name)}">
       ${teamPicker}
+      ${kind === 'guest'
+    ? `<input type="checkbox" class="play-in" data-g="${esc(o.id)}" data-gf="playing"
+             ${o.playing === false ? '' : 'checked'} title="Играет в конкурсах — выходит на арену и попадает в колесо">`
+    : ''}
       <input type="color" class="color-in" data-${kind === 'guest' ? 'g' : 't'}="${esc(o.id)}" data-gf="color"
              value="${esc(o.color || '#E63946')}">
       ${kind === 'team' ? `<input type="number" class="score-in" data-t="${esc(o.id)}" data-gf="score" value="${o.score || 0}">` : ''}
@@ -260,6 +288,10 @@ function renderPlayers() {
   const phones = (state.show.playMode === 'phones');
   $('modePhones').checked = phones;
   $('modeInterludes').checked = state.show.interludes !== false;
+  $('modeEach').checked = state.show.answerMode === 'each';
+  // Пока ведущий печатает, чужое состояние текст не перебивает.
+  const pad = $('notebook');
+  if (document.activeElement !== pad) pad.value = state.show.notebook || '';
 
   const players = Object.values((state.play && state.play.players) || {});
   const byId = {};
@@ -285,15 +317,48 @@ function renderPlayers() {
 
 function renderTeams() {
   $('modeTeams').checked = (state.show.mode || 'teams') === 'teams';
-  $('teamList').innerHTML = (state.teams || []).map((t) => ownerRow(t, 'team')).join('')
-    || '<div class="muted">Семей пока нет</div>';
+  renderOwnerList($('teamList'), state.teams || [], 'team', 'Семей пока нет');
+}
+
+// Сохраняем сами DOM-узлы полей при ответах сервера: фокус, выделение,
+// промежуточный ввод и незавершённая композиция текста остаются на месте.
+function renderOwnerList(container, list, kind, emptyText) {
+  const existing = new Map([...container.querySelectorAll('[data-owner]')].map((row) => [row.dataset.owner, row]));
+  if (!list.length) { container.innerHTML = `<div class="muted">${emptyText}</div>`; return; }
+  if (!existing.size) container.replaceChildren();
+  list.forEach((owner, index) => {
+    const template = document.createElement('template');
+    template.innerHTML = ownerRow(owner, kind);
+    const fresh = template.content.firstElementChild;
+    const row = existing.get(owner.id) || fresh;
+    if (row !== fresh) {
+      [...fresh.children].forEach((next, childIndex) => {
+        const node = row.children[childIndex];
+        if (node === document.activeElement) return;
+        if (node.tagName === 'INPUT') {
+          if (node.type === 'checkbox') {
+            if (node.checked !== next.checked) node.checked = next.checked;
+          } else if (node.value !== next.value) node.value = next.value;
+        } else {
+          if (node.innerHTML !== next.innerHTML) node.innerHTML = next.innerHTML;
+          if (node.tagName === 'SELECT') node.value = next.value;
+          if (node.getAttribute('style') !== next.getAttribute('style')) {
+            if (next.hasAttribute('style')) node.setAttribute('style', next.getAttribute('style'));
+            else node.removeAttribute('style');
+          }
+        }
+      });
+    }
+    if (container.children[index] !== row) container.insertBefore(row, container.children[index] || null);
+    existing.delete(owner.id);
+  });
+  for (const row of existing.values()) row.remove();
 }
 
 // ——— гости ———
 
 function renderGuests() {
-  $('guestList').innerHTML = state.guests.map((g) => ownerRow(g, 'guest')).join('')
-    || '<div class="muted">Гостей пока нет</div>';
+  renderOwnerList($('guestList'), state.guests, 'guest', 'Гостей пока нет');
 }
 
 // ——— медиа ———
@@ -311,7 +376,10 @@ function renderMedia() {
 function loadMedia() {
   return fetch('/api/media').then((r) => r.json()).then((data) => {
     // sfx/ и music/ — служебные звуки показа, в конкурсах они не нужны.
-    media = (data.files || []).filter((f) => !/^(sfx|music)\//.test(f.name || ''));
+    const all = data.files || [];
+    media = all.filter((f) => !/^(sfx|music)\//.test(f.name || ''));
+    // Для «Музыки номера» годится всё, кроме служебных звуков клоуна.
+    musicFiles = all.filter((f) => f.kind === 'audio' && !/^sfx\//.test(f.name || ''));
     renderMedia();
     if (draft) renderEditor();
   });
@@ -346,33 +414,46 @@ function upload(files) {
 
 // ——— выбор картинки или зверя ———
 
-function openPicker(kind, onPick) {
-  picker = { kind, onPick };
-  $('pickerTitle').textContent = kind === 'avatar' ? 'Выбери зверя' : 'Выбери картинку';
+function openPicker(kind, onPick, selected = '') {
+  picker = { kind, onPick, selected, opener: document.activeElement };
+  $('pickerTitle').textContent = kind === 'photo' ? 'Выбери фотографию' : kind === 'avatar' ? 'Выбери зверя' : 'Выбери картинку';
+  $('pickerGrid').classList.toggle('photo-grid', kind === 'photo');
   $('pickerSearch').value = '';
-  $('pickerSearch').style.display = kind === 'avatar' ? 'none' : '';
+  $('pickerSearch').style.display = '';
   renderPicker('');
   $('pickerBack').classList.add('is-open');
-  if (kind !== 'avatar') $('pickerSearch').focus();
+  $('pickerSearch').focus();
 }
 
 function renderPicker(query) {
   const q = (query || '').trim().toLowerCase();
   let cells;
-  if (picker.kind === 'avatar') {
-    cells = AVATAR_IDS.map((id) =>
-      `<div class="cell" data-value="${id}">${avatar(id)}${esc(AVATAR_LABELS[id])}</div>`);
+  if (picker.kind === 'photo') {
+    cells = media.filter((f) => f.kind === 'photo' && (!q || f.name.toLowerCase().includes(q)))
+      .map((f) => `<button type="button" class="cell photo-cell ${f.path === picker.selected ? 'is-selected' : ''}" data-value="${esc(f.path)}" aria-pressed="${f.path === picker.selected}">
+        <img src="${esc(f.path)}" alt="" loading="lazy"><span>${esc(f.name)}</span>
+        ${f.path === picker.selected ? '<small>Выбрано ✓</small>' : ''}</button>`);
+    if (!cells.length) cells.push(`<div class="muted">${q ? 'Фотографий с таким названием нет.' : 'Фотографий пока нет. Загрузи их в разделе «Медиа» внизу страницы.'}</div>`);
+  } else if (picker.kind === 'avatar') {
+    cells = AVATAR_IDS.filter((id) => !q || id.includes(q) || AVATAR_LABELS[id].toLowerCase().includes(q)).map((id) =>
+      `<button type="button" class="cell" data-value="${id}">${avatar(id)}${esc(AVATAR_LABELS[id])}</button>`);
+    // Свои картинки — сразу после зверей: портрет гостя или зверь, сделанный
+    // из его лица. Кладутся в «Медиа» как обычные фотографии.
+    const photos = media.filter((f) => f.kind === 'photo' && (!q || f.name.toLowerCase().includes(q)));
+    cells.push(...photos.map((f) =>
+      `<button type="button" class="cell" data-value="${esc(f.path)}"><img class="av-photo-pick" src="${esc(f.path)}" alt="" loading="lazy">${esc(f.name)}</button>`));
   } else {
     cells = ART_NAMES
-      .filter((n) => !q || n.includes(q) || (ART_LABELS[n] || '').includes(q))
-      .map((n) => `<div class="cell" data-value="${n}">${art(n)}${esc(n)}</div>`);
-    cells.unshift('<div class="cell is-clear" data-value="">без картинки</div>');
+      .filter((n) => !q || n.includes(q) || (ART_LABELS[n] || '').toLowerCase().includes(q))
+      .map((n) => `<button type="button" class="cell" data-value="${n}">${art(n)}${esc(ART_LABELS[n])}</button>`);
+    cells.unshift('<button type="button" class="cell is-clear" data-value="">без картинки</button>');
   }
   $('pickerGrid').innerHTML = cells.join('') || '<div class="muted">Ничего не нашлось</div>';
 }
 
 function closePicker() {
   $('pickerBack').classList.remove('is-open');
+  picker?.opener?.focus();
   picker = null;
 }
 
@@ -406,7 +487,7 @@ $('editor').addEventListener('input', (e) => {
     const f = t.dataset.f;
     if (!f) return;
     const numeric = f === 'pointsPerCorrect' || f === 'multiplier';
-    draft[f] = numeric ? Number(t.value) : t.value;
+    draft[f] = t.type === 'checkbox' ? t.checked : numeric ? Number(t.value) : t.value;
     if (f === 'multiplier') renderList();
     scheduleSave();
     if (f === 'title') renderList();
@@ -416,7 +497,7 @@ $('editor').addEventListener('input', (e) => {
   // Остальное — поля формата: у вопроса есть data-i, у конкурса нет.
   const i = t.dataset.i;
   const type = getType(draft.type);
-  const list = i === undefined ? type.fields : type.itemFields;
+  const list = i === undefined ? contestFields(type) : type.itemFields;
   const target = i === undefined ? draft : currentItem(i);
   if (!target || !applyInput(list, t, target)) return;
   scheduleSave();
@@ -463,7 +544,7 @@ $('editor').addEventListener('click', (e) => {
 
   // Всё остальное — кнопки полей формата.
   if (!btn.dataset.fk) return;
-  const list = i === undefined ? type.fields : type.itemFields;
+  const list = i === undefined ? contestFields(type) : type.itemFields;
   const target = i === undefined ? draft : currentItem(i);
   if (!target) return;
   if (applyClick(list, btn, target, fieldApi()) === 'changed') done();
@@ -561,6 +642,21 @@ $('modeInterludes').addEventListener('change', (e) => {
   markSaved();
 });
 
+// Блокнот сохраняем с задержкой — он длинный, и писать в него будут долго.
+let notebookTimer = 0;
+$('notebook').addEventListener('input', () => {
+  clearTimeout(notebookTimer);
+  $('notebookSaved').textContent = 'печатаю…';
+  notebookTimer = setTimeout(() => {
+    bus.send('setNotebook', { text: $('notebook').value })
+      .then(() => { $('notebookSaved').textContent = 'сохранено'; });
+  }, 600);
+});
+
+$('modeEach').addEventListener('change', (e) => {
+  bus.send('setAnswerMode', { mode: e.target.checked ? 'each' : 'family' }).then(markSaved);
+});
+
 $('modePhones').addEventListener('change', (e) => {
   bus.send('setPlayMode', { mode: e.target.checked ? 'phones' : 'host' });
   markSaved();
@@ -580,7 +676,7 @@ $('guestList').addEventListener('input', (e) => {
   if (!t.dataset.g) return;
   const field = t.dataset.gf;
   if (field === 'score') bus.send('setScore', { id: t.dataset.g, score: Number(t.value) });
-  else bus.send('updateGuest', { id: t.dataset.g, [field]: t.value });
+  else bus.send('updateGuest', { id: t.dataset.g, [field]: t.type === 'checkbox' ? t.checked : t.value });
   markSaved();
 });
 
@@ -642,7 +738,16 @@ $('pickerBack').addEventListener('click', (e) => {
 });
 $('pickerClose').addEventListener('click', closePicker);
 $('pickerSearch').addEventListener('input', (e) => renderPicker(e.target.value));
-document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closePicker(); });
+document.addEventListener('keydown', (e) => {
+  if (!picker) return;
+  if (e.key === 'Escape') { closePicker(); return; }
+  if (e.key === 'Tab') {
+    const items = [...$('pickerBack').querySelectorAll('button, input, [tabindex="0"]')].filter((node) => node.getClientRects().length);
+    const first = items[0], last = items[items.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last?.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first?.focus(); }
+  }
+});
 
 // ——— медиа: загрузка ———
 
@@ -700,6 +805,7 @@ $('icUsers').innerHTML = icon('users');
 $('icTeams').innerHTML = icon('home');
 $('icSettings').innerHTML = icon('settings');
 $('icPlayers').innerHTML = icon('phone');
+$('icNotebook').innerHTML = icon('edit');
 $('icCheck').innerHTML = icon('check-circle');
 $('icEdit').innerHTML = icon('edit');
 $('icFile').innerHTML = icon('file');

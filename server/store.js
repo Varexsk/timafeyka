@@ -56,8 +56,17 @@ const store = {
     // На старте ничего не воспроизводим сами: команда видео должна прийти от экрана.
     this.runtime.fx = { type: '', seq: 0 };
     this.runtime.music = { on: false, seq: 0 };
+    if (this.runtime.dj) this.runtime.dj.playing = false;
+    if (this.runtime.album) { this.runtime.album.playing = false; this.runtime.album.open = false; }
+    if (this.runtime.partyDraw) this.runtime.partyDraw.open = false;
+    this.runtime.intermission = null;
+    this.runtime.ceremony = null;
+    this.runtime.capsuleStage = null;
+    this.runtime.lionAct = null;
     // Таймер после перезапуска не должен внезапно досчитывать старое время.
     this.runtime.timer = null;
+    // Ролик перед ответом доигрывал прошлый телевизор — начнём вопрос заново.
+    this.runtime.rolling = null;
     this.runtime.cake = null;
     this.runtime.spot = { on: false, seq: 0 };
     this.markAll();

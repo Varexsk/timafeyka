@@ -8,10 +8,10 @@ import * as bus from './bus.js';
 import { loadTypes, getType } from './engine/registry.js';
 import { playModeOf } from './engine/ctx.js';
 import { clock, leftSeconds } from './engine/timer.js';
-import { esc, names, LETTERS } from './util.js';
+import { esc, names, LETTERS, optionsOf, fmtScore } from './util.js';
 import { mountSprite, icon } from './icons.js';
 import { mountArtSprite, art, hasArt } from './art.js';
-import { mountAvatarSprite, avatar, hasAvatar } from './avatars.js';
+import { mountAvatarSprite, avatar, hasAvatar, isPhotoAvatar, photoAvatar } from './avatars.js';
 
 await loadTypes();
 
@@ -21,6 +21,7 @@ const STORE_KEY = 'cirk.player';
 let state = null;
 let me = restore();
 let joined = false;
+let bodyWhere = '';
 
 // Задержка до сервера. Нужна честной жужжалке: у кого-то Wi-Fi лучше,
 // и сервер вычитает половину этого числа из времени нажатия.
@@ -47,6 +48,24 @@ function restore() {
   } catch (e) {
     return null;   // приватное окно или запрет на хранилище — просто спросим заново
   }
+}
+
+// Выбрал семью, но ещё не сказал, кто ты в ней. В режиме «по гостям» второй
+// вопрос не нужен: там семья и человек — одно и то же.
+function needsPerson() {
+  if (!me || me.guestId !== undefined) return false;
+  return ((state.show && state.show.mode) || 'teams') === 'teams' && familyMembers().length > 0;
+}
+
+// Кто из семьи выходит на конкурсы. Болельщиков не предлагаем: за них
+// всё равно никто не отвечает.
+function familyMembers() {
+  if (!me || !state) return [];
+  return (state.guests || []).filter((g) => g.teamId === me.ownerId && g.playing !== false);
+}
+
+function myPerson() {
+  return me && me.guestId ? (state.guests || []).find((g) => g.id === me.guestId) || null : null;
 }
 
 function remember(next) {
@@ -87,10 +106,8 @@ function buzz(ms) {
 }
 
 function avatarHtml(o) {
-  const inner = hasAvatar(o.avatar)
-    ? avatar(o.avatar)
-    : `<span>${esc(o.emoji || '')}</span>`;
-  return inner;
+  if (isPhotoAvatar(o.avatar)) return photoAvatar(o.avatar);
+  return hasAvatar(o.avatar) ? avatar(o.avatar) : `<span>${esc(o.emoji || '')}</span>`;
 }
 
 function optionPic(o) {
@@ -147,6 +164,30 @@ function renderPick() {
   `;
 }
 
+function renderPickPerson() {
+  const owner = myOwner();
+  const taken = {};
+  for (const p of Object.values((state.play && state.play.players) || {})) {
+    if (p.guestId && p.id !== (me && me.playerId)) taken[p.guestId] = p.id;
+  }
+
+  return `
+    <div class="p-title">Кто из семьи?</div>
+    <div class="p-hint">Семья «${esc(owner ? owner.name : '')}». Баллы всё равно общие — имя нужно,
+      чтобы ведущий видел, кто что ответил, и чтобы в конце выбрать главного знатока.</div>
+    <div class="p-pick">
+      ${familyMembers().map((g) => `
+        <button data-person="${esc(g.id)}" style="--c:${esc(g.color || owner && owner.color || 'var(--ink)')}">
+          <span class="av">${avatarHtml(g)}</span>
+          <span>${esc(g.name)}</span>
+          ${taken[g.id] ? '<span class="busy">уже с телефона</span>' : ''}
+        </button>`).join('')}
+    </div>
+    <button class="p-big" data-person="" style="margin-top:.6rem">Мы отвечаем вместе с одного телефона</button>
+    <button class="p-link" data-back="1">← другая семья</button>
+  `;
+}
+
 function renderWaiting(text, hint) {
   return `
     <div class="p-card">
@@ -191,12 +232,43 @@ function renderBuzzer(ctx, b) {
     <button class="p-buzz" data-buzz="1">ЖМИ!</button>`;
 }
 
+// Что ответил именно этот телефон. Ответ семьи — не то же самое: ты назвал
+// 3200, бабушка 3300, а в зачёт пошло среднее. Когда за семью отвечает ведущий
+// с пульта, поимённых ответов нет — тогда ответ семьи и есть твой.
+function myAnswer(round) {
+  if (!round || !round.family) return round ? round.mine : undefined;
+  const own = me && round.family[me.playerId];
+  return own ? own.v : undefined;
+}
+
+// Кто ещё из семьи уже ответил — и что из этого сложилось. Без этой строки
+// непонятно, почему семье засчитали не то, что ты нажал.
+function familyLine(round, label) {
+  const by = round && round.family;
+  if (!by) return '';
+  const players = (state && state.play && state.play.players) || {};
+  const others = Object.entries(by).filter(([id]) => !me || id !== me.playerId);
+  if (!others.length) return '';
+  const list = others
+    .map(([id, e]) => esc((players[id] || {}).name || 'Гость') + ' — ' + esc(label(e.v)))
+    .join(' · ');
+  return `<div class="p-hint">В семье: ${list} · семье засчитано <b>${esc(label(round.mine))}</b></div>`;
+}
+
+function optionLabel(opts, value) {
+  const o = opts[Number(value)];
+  if (o === undefined || o === null) return '—';
+  return typeof o === 'string' ? o : o.text || String(value);
+}
+
 function renderChoice(ctx) {
-  const opts = (ctx.item.options || []);
+  const opts = optionsOf(ctx.type, ctx.item);
   const round = ctx.round || {};
   const revealed = ctx.runtime.phase === 'reveal';
+  // Ролик с выбором уже идёт — ответ на экране виден, менять его поздно.
+  const closed = revealed || !!ctx.runtime.rolling;
   const correct = (ctx.runtime.correct || {}).answer;
-  const mine = round.mine;
+  const mine = myAnswer(round);
 
   const tally = {};
   if (revealed && round.votes) {
@@ -206,14 +278,17 @@ function renderChoice(ctx) {
     }
   }
 
+  const hidden = round.hidden || [];
+
   return `
     <div class="p-question">${esc(ctx.item.q || '')}</div>
     <div class="p-options">
       ${opts.map((o, i) => {
     let cls = 'p-opt';
     if (mine === i) cls += ' is-mine';
+    if (hidden.includes(i)) cls += ' is-out';
     if (revealed && Number.isInteger(correct)) cls += i === correct ? ' is-right' : ' is-wrong';
-    return `<button class="${cls}" data-choice="${i}" ${revealed ? 'disabled' : ''}>
+    return `<button class="${cls}" data-choice="${i}" ${closed || hidden.includes(i) ? 'disabled' : ''}>
           <span class="letter">${LETTERS[i] || i + 1}</span>
           ${optionPic(o)}
           <span class="label">${esc(typeof o === 'string' ? o : o.text)}</span>
@@ -221,13 +296,55 @@ function renderChoice(ctx) {
         </button>`;
   }).join('')}
     </div>
-    ${revealed ? revealHint(ctx, mine === correct) : answeredHint(round, mine !== undefined)}
+    ${revealed ? revealHint(ctx, mine === correct)
+    : closed ? '<div class="p-hint">Смотрим видео — ответы закрыты. Сейчас узнаем!</div>'
+      : answeredHint(round, mine !== undefined)}
+    ${familyLine(round, (v) => optionLabel(opts, v))}
+    ${audienceHtml(ctx, opts)}
+    ${jokersHtml(ctx, closed)}
   `;
+}
+
+// Расклад голосов у той семьи, которая потратила «помощь зала». На телевизоре
+// он мелькает крупно и уходит, а здесь остаётся: решать-то им.
+function audienceHtml(ctx, opts) {
+  const tally = ctx.round && ctx.round.audience;
+  if (!tally || ctx.runtime.phase === 'reveal') return '';
+  const total = Object.values(tally).reduce((sum, n) => sum + n, 0);
+  return `<div class="p-audience">
+    <div class="p-hint">Помощь зала${total ? '' : ' · зал ещё думает'}</div>
+    ${opts.map((o, i) => {
+    const share = total ? Math.round(((tally[i] || 0) / total) * 100) : 0;
+    return `<div class="p-audience-row">
+        <span>${LETTERS[i] || i + 1}</span>
+        <span class="p-audience-bar"><span style="width:${share}%"></span></span>
+        <b>${share}%</b>
+      </div>`;
+  }).join('')}
+  </div>`;
+}
+
+// Два джокера на семью за весь вечер. Тратит один человек — помогает всем:
+// баллы-то общие.
+function jokersHtml(ctx, revealed) {
+  if (revealed || ctx.mode !== 'phones') return '';
+  const used = ctx.runtime.jokers || {};
+  const audience = (ctx.round && ctx.round.audience) || false;
+  const options = optionsOf(ctx.type, ctx.item).length;
+  return `<div class="p-jokers">
+    <button class="p-joker" data-joker="fifty" ${used.fifty || options < 4 ? 'disabled' : ''}>
+      <b>50 на 50</b><small>${used.fifty ? 'потрачен' : options < 4 ? 'нужно 4 варианта' : 'убрать два неверных'}</small>
+    </button>
+    <button class="p-joker" data-joker="audience" ${used.audience ? 'disabled' : ''}>
+      <b>Помощь зала</b><small>${used.audience ? 'потрачен' : audience ? 'уже на экране' : 'как ответили другие'}</small>
+    </button>
+  </div>`;
 }
 
 function renderText(ctx) {
   const round = ctx.round || {};
-  const mine = round.mine === undefined ? '' : String(round.mine);
+  const own = myAnswer(round);
+  const mine = own === undefined ? '' : String(own);
   const vote = voteDecl(ctx.type) || {};
   return `
     <div class="p-question">${esc(ctx.item.q || '')}</div>
@@ -238,11 +355,52 @@ function renderText(ctx) {
   `;
 }
 
+// «Кто это сказал»: автор выбирается из выпадающего списка гостей,
+// сгруппированного по семьям. Себя в списке нет — свои слова гость и так знает.
+function renderGuest(ctx) {
+  const round = ctx.round || {};
+  const revealed = ctx.runtime.phase === 'reveal';
+  const mine = myAnswer(round);
+  const guests = state.guests || [];
+  const teams = state.teams || [];
+  const nameOf = (id) => (guests.find((g) => g.id === id) || {}).name || '—';
+  const quote = `<div class="p-question">«${esc(ctx.item.q || '')}»</div>`;
+
+  if (revealed) {
+    const right = (ctx.runtime.correct || {}).author || '';
+    return `${quote}
+      <div class="p-card">
+        <div class="p-hint">Это сказал</div>
+        <div class="p-title">${right ? esc(nameOf(right)) : '—'}</div>
+        ${mine === undefined ? '' : `<div class="p-hint" style="margin-top:.4rem">Твой выбор: ${esc(nameOf(mine))}</div>`}
+      </div>
+      ${revealHint(ctx, !!right && mine === right)}
+      ${familyLine(round, nameOf)}`;
+  }
+
+  const self = me && me.guestId;
+  const others = guests.filter((g) => g.id !== self);
+  const opt = (g) => `<option value="${esc(g.id)}"${g.id === mine ? ' selected' : ''}>${esc(g.name)}</option>`;
+  const groups = teams.map((t) => {
+    const own = others.filter((g) => g.teamId === t.id);
+    return own.length ? `<optgroup label="${esc(t.name)}">${own.map(opt).join('')}</optgroup>` : '';
+  }).join('');
+  const loose = others.filter((g) => !teams.some((t) => t.id === g.teamId)).map(opt).join('');
+  return `${quote}
+    <select class="p-select" data-guest-pick aria-label="Кто это сказал?">
+      <option value=""${mine === undefined ? ' selected' : ''} disabled>Кто это сказал? Выбери…</option>
+      ${groups}${loose}
+    </select>
+    ${answeredHint(round, mine !== undefined)}
+    ${familyLine(round, nameOf)}`;
+}
+
 function renderNumber(ctx) {
   const round = ctx.round || {};
   const revealed = ctx.runtime.phase === 'reveal';
   const unit = (ctx.item.unit || '').trim();
-  const mine = round.mine;
+  const mine = myAnswer(round);
+  const family = round.mine;
 
   if (revealed) {
     const right = (ctx.runtime.correct || {}).value;
@@ -252,6 +410,9 @@ function renderNumber(ctx) {
         <div class="p-hint">Правильный ответ</div>
         <div class="p-title">${right === null || right === undefined ? '—' : esc(right)}${unit ? ' ' + esc(unit) : ''}</div>
         ${mine === undefined ? '' : `<div class="p-hint" style="margin-top:.4rem">Ты называл ${esc(mine)}</div>`}
+        ${family !== undefined && String(family) !== String(mine)
+    ? `<div class="p-hint">Семья назвала ${esc(family)}${unit ? ' ' + esc(unit) : ''}</div>`
+    : ''}
       </div>`;
   }
 
@@ -263,6 +424,7 @@ function renderNumber(ctx) {
       <button class="p-big" data-send="number" style="flex:0 0 auto;width:8rem">Ставлю!</button>
     </div>
     ${answeredHint(round, mine !== undefined)}
+    ${familyLine(round, (v) => String(v))}
   `;
 }
 
@@ -274,7 +436,7 @@ function answeredHint(round, sent) {
 }
 
 function revealHint(ctx, right) {
-  if (ctx.round && ctx.round.mine === undefined) {
+  if (ctx.round && myAnswer(ctx.round) === undefined) {
     return '<div class="p-hint">В этот раз вы не ответили.</div>';
   }
   return right
@@ -328,6 +490,7 @@ function renderPlay() {
   if (vote.kind === 'number') return renderNumber(ctx);
   if (vote.kind === 'text') return renderText(ctx);
   if (vote.kind === 'choice') return renderChoice(ctx);
+  if (vote.kind === 'guest') return renderGuest(ctx);
   return renderWaiting('Смотри на большой экран', '');
 }
 
@@ -345,6 +508,9 @@ function renderTimer() {
 
 function render() {
   if (!state) return;
+  $('capsuleLink').hidden = !state.show.capsule?.open;
+  $('capsuleLink').style.display = state.show.capsule?.open ? 'block' : 'none';
+  if (state.runtime.intermission?.open) { renderWaiting('Антракт', 'Отдыхаем — ведущий скоро продолжит праздник.'); renderTimer(); return; }
   const owner = myOwner();
 
   document.body.classList.toggle('is-rehearsal', !!state.runtime.rehearsal);
@@ -359,13 +525,71 @@ function render() {
     return;
   }
 
-  $('myAvatar').innerHTML = avatarHtml(owner);
+  if (needsPerson()) {
+    $('myAvatar').innerHTML = avatarHtml(owner);
+    $('myAvatar').style.setProperty('--c', owner.color || 'var(--ink)');
+    $('myName').textContent = owner.name;
+    $('mySub').textContent = 'кто ты в семье?';
+    $('myScore').textContent = '';
+    $('playBody').innerHTML = renderPickPerson();
+    renderTimer();
+    return;
+  }
+
+  const person = myPerson();
+  $('myAvatar').innerHTML = avatarHtml(person || owner);
   $('myAvatar').style.setProperty('--c', owner.color || 'var(--ink)');
-  $('myName').textContent = owner.name;
-  $('mySub').textContent = state.runtime.rehearsal ? 'репетиция' : names(state).title;
-  $('myScore').textContent = owner.score || 0;
-  $('playBody').innerHTML = renderPlay();
+  $('myName').textContent = person ? person.name : owner.name;
+  $('mySub').textContent = state.runtime.rehearsal ? 'репетиция'
+    : person ? owner.name : names(state).title;
+  $('myScore').textContent = fmtScore(owner.score);
+  // Гость как раз выбирает в списке или печатает ответ — не перерисовываем
+  // у него под пальцами: ответы других приходят постоянно, и открытый список
+  // захлопывался бы, а набранный текст пропадал. Сменился вопрос — рисуем.
+  const r = state.runtime;
+  const where = [r.screen, r.contestId, r.itemId, r.phase, r.rolling ? 1 : 0].join('|');
+  const focus = document.activeElement;
+  const busy = focus && $('playBody').contains(focus) && /^(SELECT|INPUT|TEXTAREA)$/.test(focus.tagName);
+  if (!busy || where !== bodyWhere) $('playBody').innerHTML = renderPlay();
+  bodyWhere = where;
   renderTimer();
+  renderBooth();
+}
+
+// ——— фотобудка ———
+//
+// Единственный канал от гостя, кроме ответов: снимок с телефона. Уходит на
+// сервер как обычный файл, а оттуда — в программу и в семейный альбом.
+
+function renderBooth() {
+  const bar = $('boothBar');
+  const on = !!myOwner() && !needsPerson();
+  bar.hidden = !on;
+  if (!on) return;
+  const mine = (state.show.booth || []).filter((p) => p.ownerId === me.ownerId).length;
+  $('boothHint').textContent = mine
+    ? `От вашей семьи уже ${mine} ${mine === 1 ? 'кадр' : mine < 5 ? 'кадра' : 'кадров'}`
+    : 'Кадр попадёт на телевизор и в семейный альбом';
+}
+
+async function sendPhoto(file) {
+  if (!file || !me) return;
+  if (file.size > 12 * 1024 * 1024) { toast('Фотография слишком большая'); return; }
+  $('boothHint').textContent = 'Отправляю…';
+  try {
+    const query = new URLSearchParams({
+      name: file.name || 'photo.jpg',
+      owner: me.ownerId,
+      guest: me.guestId || ''
+    });
+    const r = await fetch('/api/booth?' + query, { method: 'POST', body: file });
+    const data = await r.json();
+    if (data.ok) { buzz(20); toast('Фото в альбоме!'); }
+    else toast(data.error || 'Не получилось');
+  } catch (e) {
+    toast('Нет связи — попробуй ещё раз');
+  }
+  renderBooth();
 }
 
 // ——— связь ———
@@ -381,15 +605,27 @@ function pick(ownerId) {
   render();
 }
 
-function ensureJoined() {
-  if (joined || !me || !myOwner()) return;
-  joined = true;
-  bus.send('join', { playerId: me.playerId, ownerId: me.ownerId });
+// «Мы вместе» — это тоже ответ: guestId остаётся пустым, но вопрос больше
+// не задаём. Поэтому важно отличать «ещё не выбрал» (undefined) от «выбрал
+// отвечать за всю семью» (пустая строка).
+function pickPerson(guestId) {
+  remember({ ...me, guestId: String(guestId || '') });
+  joined = false;
+  ensureJoined();
+  render();
 }
 
+function ensureJoined() {
+  if (joined || !me || !myOwner() || needsPerson()) return;
+  joined = true;
+  bus.send('join', { playerId: me.playerId, ownerId: me.ownerId, guestId: me.guestId || '' });
+}
+
+// Ответ уходит вместе с playerId: сервер складывает ответы семьи по людям,
+// а не затирает предыдущий. Бабушка, ответившая первой, больше не пропадает.
 function sendVote(value) {
   if (!me) return;
-  bus.send('vote', { ownerId: me.ownerId, value });
+  bus.send('vote', { ownerId: me.ownerId, playerId: me.playerId, value });
 }
 
 // ——— события ———
@@ -398,11 +634,24 @@ document.body.addEventListener('click', (e) => {
   const pickBtn = e.target.closest('[data-pick]');
   if (pickBtn) { buzz(); pick(pickBtn.dataset.pick); return; }
 
+  const person = e.target.closest('[data-person]');
+  if (person) { buzz(); pickPerson(person.dataset.person); return; }
+
+  if (e.target.closest('[data-back]')) { buzz(); remember(null); joined = false; render(); return; }
+
   const choice = e.target.closest('[data-choice]');
   if (choice) {
     buzz(18);
     sendVote(Number(choice.dataset.choice));
     toast('Ответ принят!');
+    return;
+  }
+
+  const joker = e.target.closest('[data-joker]');
+  if (joker && !joker.disabled) {
+    buzz(25);
+    bus.send('joker', { ownerId: me.ownerId, kind: joker.dataset.joker })
+      .then((r) => toast(r.ok ? 'Джокер пошёл в дело!' : r.error || 'Не вышло'));
     return;
   }
 
@@ -433,6 +682,21 @@ document.body.addEventListener('click', (e) => {
     sendVote(text);
     toast('Отправлено!');
   }
+});
+
+document.body.addEventListener('change', (e) => {
+  const pickGuest = e.target.closest('[data-guest-pick]');
+  if (!pickGuest || !pickGuest.value) return;
+  buzz(18);
+  sendVote(pickGuest.value);
+  pickGuest.blur();
+  toast('Ответ принят!');
+});
+
+$('boothInput').addEventListener('change', (e) => {
+  const file = e.target.files && e.target.files[0];
+  e.target.value = '';
+  sendPhoto(file);
 });
 
 mountSprite();

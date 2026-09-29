@@ -8,9 +8,17 @@
   <link rel="stylesheet" href="css/theme.css">
   <link rel="stylesheet" href="css/circus.css">
   <link rel="stylesheet" href="css/screens.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/finishing.css">
+  <link rel="stylesheet" href="css/party.css">
+  <link rel="stylesheet" href="css/director.css">
+  <link rel="stylesheet" href="css/theater.css">
 </head>
-<body class="tv">
-  <div class="stage" id="stage">
+<body class="tv theater-full">
+  <div class="stage is-curtain" id="stage">
+    <div class="theater-atmosphere" aria-hidden="true"></div>
+    <div class="theater-house-dimmer" aria-hidden="true"></div>
+    <div class="theater-lights" aria-hidden="true"><div class="moving-light light-left"><div class="light-beam"></div><div class="light-fixture"><i></i></div></div><div class="moving-light light-right"><div class="light-beam"></div><div class="light-fixture"><i></i></div></div></div>
     <div class="sky" id="sky"></div>
     <div class="accent-wash"></div>
     <div class="balloons" id="balloons"></div>
@@ -23,7 +31,7 @@
     <main class="screen" id="screen"></main>
 
     <div class="lion-wrap" id="lionWrap"></div>
-    <div class="scorebar" id="scorebar"></div>
+    <aside class="scorebar" id="scorebar" aria-label="Участники и баллы" hidden></aside>
     <div class="spotlight" id="spotlight"></div>
     <div class="interlude" id="interlude"></div>
     <div class="cake" id="cake" hidden></div>
@@ -44,6 +52,7 @@
         <kbd>R</kbd> показать ответ · <kbd>L</kbd> лидеры<br>
         <kbd>1</kbd>…<kbd>9</kbd> балл гостю (с <kbd>Shift</kbd> — минус) · <kbd>Z</kbd> отменить<br>
         <kbd>T</kbd> таймер на минуту<br>
+        <kbd>↑</kbd>/<kbd>↓</kbd> страницы участников<br>
         <kbd>C</kbd> конфетти · <kbd>D</kbd> дробь · <kbd>M</kbd> музыка<br>
         <kbd>F</kbd> полный экран · <kbd>H</kbd> скрыть эту панель
       </div>

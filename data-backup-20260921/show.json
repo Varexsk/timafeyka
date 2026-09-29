@@ -1,0 +1,826 @@
+{
+  "hero": "Тимофей",
+  "heroShort": "Тимоша",
+  "age": 1,
+  "lion": "Лёва",
+  "mode": "teams",
+  "contests": [
+    {
+      "subtitle": "Тёплый номер",
+      "title": "Год за минуту",
+      "rules": "Смотрим, как рос наш артист.",
+      "lionLine": "",
+      "pointsPerCorrect": 0,
+      "items": [
+        {
+          "id": "i-aqf3ac",
+          "media": "media/photo_13_2026-09-08_21-28-04.jpg",
+          "q": ""
+        },
+        {
+          "id": "i-4a0oc8",
+          "media": "media/photo_14_2026-09-08_21-28-04.jpg",
+          "q": ""
+        },
+        {
+          "id": "i-kewoo4",
+          "media": "media/photo_2_2026-09-08_21-28-04.jpg",
+          "q": ""
+        }
+      ],
+      "id": "c-vsuizg",
+      "type": "slideshow",
+      "enabled": true
+    },
+    {
+      "id": "c-quiz",
+      "type": "quiz",
+      "enabled": true,
+      "subtitle": "Номер первый",
+      "title": "Как хорошо вы знаете Тимошу?",
+      "rules": "Ведущий читает вопрос, гости кричат ответ. За верный — балл!",
+      "lionLine": "Р-р-разминка! Кто тут у нас главный знаток именинника?",
+      "pointsPerCorrect": 1,
+      "items": [
+        {
+          "id": "q1",
+          "q": "Во сколько родился наш именинник?",
+          "options": [
+            {
+              "text": "6:12",
+              "icon": ""
+            },
+            {
+              "text": "7:51",
+              "icon": ""
+            },
+            {
+              "text": "8:09",
+              "icon": ""
+            },
+            {
+              "text": "8:37",
+              "icon": ""
+            }
+          ],
+          "answer": 0,
+          "answerNote": "В 6:15",
+          "media": "media/photo_63_2026-09-08_21-28-04.jpg"
+        },
+        {
+          "id": "q4",
+          "q": "В какой день недели он родился?",
+          "options": [
+            {
+              "text": "Понедельник",
+              "icon": "num-1"
+            },
+            {
+              "text": "Вторник",
+              "icon": "num-2"
+            },
+            {
+              "text": "Среда",
+              "icon": "num-3"
+            },
+            {
+              "text": "Четверг",
+              "icon": "num-4"
+            },
+            {
+              "text": "Пятница",
+              "icon": "num-5"
+            },
+            {
+              "text": "Суббота",
+              "icon": "num-6"
+            },
+            {
+              "text": "Воскресенье",
+              "icon": "num-7"
+            }
+          ],
+          "answer": 1,
+          "answerNote": "",
+          "media": "media/photo_1_2026-09-08_21-28-04.jpg"
+        },
+        {
+          "id": "q6",
+          "q": "Когда он сделал свой первый шаг?",
+          "options": [
+            {
+              "text": "В 7 месяцев",
+              "icon": "footprints"
+            },
+            {
+              "text": "В 8 месяцев",
+              "icon": "footprints"
+            },
+            {
+              "text": "В 9 месяцев",
+              "icon": "footprints"
+            },
+            {
+              "text": "В 10 месяцев",
+              "icon": "footprints"
+            }
+          ],
+          "answer": 2,
+          "answerNote": "",
+          "media": "media/photo_65_2026-09-08_21-28-04.jpg"
+        },
+        {
+          "id": "q7",
+          "q": "Какой зубик появился первым?",
+          "options": [
+            {
+              "text": "Нижний слева",
+              "icon": "tooth"
+            },
+            {
+              "text": "Нижний справа",
+              "icon": "tooth"
+            },
+            {
+              "text": "Верхний слева",
+              "icon": "tooth"
+            },
+            {
+              "text": "Верхний справа",
+              "icon": "tooth"
+            }
+          ],
+          "answer": 3,
+          "answerNote": ""
+        },
+        {
+          "id": "q9",
+          "q": "Какое блюдо он любит больше всего?",
+          "options": [
+            {
+              "text": "Суп",
+              "icon": ""
+            },
+            {
+              "text": "Макароны",
+              "icon": ""
+            },
+            {
+              "text": "Картошка",
+              "icon": ""
+            },
+            {
+              "text": "Каша",
+              "icon": ""
+            }
+          ],
+          "answer": 0,
+          "answerNote": "",
+          "media": "media/photo_70_2026-09-08_21-28-04.jpg"
+        },
+        {
+          "id": "q10",
+          "q": "Что он любит делать больше всего?",
+          "options": [
+            {
+              "text": "Смотреть мультики",
+              "icon": "tv"
+            },
+            {
+              "text": "Одеваться",
+              "icon": "doll"
+            },
+            {
+              "text": "Играть догонялки",
+              "icon": "walking"
+            },
+            {
+              "text": "Кушать",
+              "icon": "bowl"
+            }
+          ],
+          "answer": 2,
+          "answerNote": "",
+          "media": "media/photo_71_2026-09-08_21-28-04.jpg"
+        },
+        {
+          "id": "q11",
+          "q": "Чего он не любит?",
+          "options": [
+            {
+              "text": "Когда Алиса его гладит",
+              "icon": ""
+            },
+            {
+              "text": "Когда забирают игрушки",
+              "icon": ""
+            },
+            {
+              "text": "Гулять на коляске",
+              "icon": ""
+            },
+            {
+              "text": "Сидеть в кроватке",
+              "icon": ""
+            }
+          ],
+          "answer": 0,
+          "answerNote": "",
+          "media": "media/photo_50_2026-09-08_21-28-04.jpg"
+        },
+        {
+          "id": "q13",
+          "q": "Кто его самый любимый человек после мамы и папы? 😄",
+          "options": [
+            {
+              "text": "Слава",
+              "icon": ""
+            },
+            {
+              "text": "Марина",
+              "icon": ""
+            },
+            {
+              "text": "Дедушка Женя",
+              "icon": ""
+            },
+            {
+              "text": "Максим",
+              "icon": ""
+            },
+            {
+              "text": "Дедушка Сережа",
+              "icon": ""
+            },
+            {
+              "text": "Аня",
+              "icon": ""
+            },
+            {
+              "text": "Алёна",
+              "icon": ""
+            }
+          ],
+          "answer": 3,
+          "answerNote": "",
+          "media": "media/photo_58_2026-09-08_21-28-04.jpg"
+        },
+        {
+          "id": "q14",
+          "q": "Какое у него сейчас самое смешное слово или звук?",
+          "options": [
+            {
+              "text": "Визжать",
+              "icon": ""
+            },
+            {
+              "text": "Папкать",
+              "icon": ""
+            },
+            {
+              "text": "Бррррр",
+              "icon": ""
+            },
+            {
+              "text": "Чмокать",
+              "icon": ""
+            }
+          ],
+          "answer": 3,
+          "answerNote": "",
+          "media": "media/photo_36_2026-09-08_21-28-04.jpg"
+        },
+        {
+          "id": "q15",
+          "q": "На кого он больше похож — на маму или на папу?",
+          "options": [
+            {
+              "text": "На маму",
+              "icon": "mom"
+            },
+            {
+              "text": "На папу",
+              "icon": "dad"
+            },
+            {
+              "text": "Сам на себя!",
+              "icon": "baby"
+            },
+            {
+              "text": "Ровно пополам",
+              "icon": "both"
+            }
+          ],
+          "answer": 2,
+          "answerNote": "",
+          "media": "media/photo_47_2026-09-08_21-28-04.jpg"
+        }
+      ]
+    },
+    {
+      "id": "c-bets",
+      "type": "bets",
+      "enabled": true,
+      "subtitle": "Ставки, господа",
+      "title": "Кто ближе к правде",
+      "rules": "Каждая семья называет своё число. Побеждает тот, кто ближе всех!",
+      "lionLine": "Делайте ваши ставки! Точность решает всё.",
+      "pointsPerCorrect": 5,
+      "items": [
+        {
+          "id": "b1",
+          "q": "Какой был вес при рождении?",
+          "value": 3570,
+          "unit": "г",
+          "answerNote": ""
+        },
+        {
+          "id": "b2",
+          "q": "Какой был рост при рождении?",
+          "value": 52,
+          "unit": "см",
+          "answerNote": ""
+        },
+        {
+          "id": "b3",
+          "q": "Сколько у Тимоши сейчас зубов?",
+          "value": 6,
+          "unit": "шт",
+          "answerNote": ""
+        },
+        {
+          "id": "b4",
+          "q": "Сколько слов он уже говорит?",
+          "value": 0,
+          "unit": "слов",
+          "answerNote": ""
+        }
+      ]
+    },
+    {
+      "id": "c-video",
+      "type": "videoChoice",
+      "enabled": true,
+      "subtitle": "Номер второй",
+      "title": "Что выберет Тимоша?",
+      "rules": "Видео замирает в момент выбора. Голосуем — и смотрим, что решил наш артист!",
+      "lionLine": "Тише-тише! Сейчас сам маэстро сделает свой выбор…",
+      "pointsPerCorrect": 1,
+      "video": "",
+      "items": [
+        {
+          "id": "v1",
+          "q": "Что выберет Тимоша?",
+          "options": [
+            {
+              "text": "Игрушка",
+              "icon": "teddy"
+            },
+            {
+              "text": "Телефон",
+              "icon": "phone"
+            }
+          ],
+          "answer": 1,
+          "answerNote": "",
+          "at": 2,
+          "revealEnd": 6,
+          "video": "media/IMG_9191.MOV"
+        },
+        {
+          "id": "v2",
+          "q": "Что выберет Тимоша?",
+          "options": [
+            {
+              "text": "Банан",
+              "icon": "banana"
+            },
+            {
+              "text": "Печенье",
+              "icon": "cookie"
+            }
+          ],
+          "answer": 1,
+          "answerNote": "",
+          "at": 0,
+          "revealEnd": 0,
+          "video": "media/IMG_9194.MOV"
+        },
+        {
+          "id": "v3",
+          "q": "Что выберет Тимоша?",
+          "options": [
+            {
+              "text": "Папа",
+              "icon": "dad"
+            },
+            {
+              "text": "Мама",
+              "icon": "mom"
+            },
+            {
+              "text": "Алиса",
+              "icon": "speaker"
+            }
+          ],
+          "answer": 0,
+          "answerNote": "",
+          "at": 0,
+          "revealEnd": 0,
+          "video": "media/IMG_9211.MOV"
+        },
+        {
+          "id": "v4",
+          "q": "Что выберет Тимоша?",
+          "options": [
+            {
+              "text": "Машина",
+              "icon": "car"
+            },
+            {
+              "text": "Кукла",
+              "icon": "doll"
+            }
+          ],
+          "answer": 0,
+          "answerNote": "",
+          "at": 0,
+          "revealEnd": 0,
+          "video": "media/IMG_9193.MOV"
+        },
+        {
+          "id": "v5",
+          "q": "Что выберет Тимоша?",
+          "options": [
+            {
+              "text": "Помидор",
+              "icon": ""
+            },
+            {
+              "text": "Огурец",
+              "icon": ""
+            }
+          ],
+          "answer": 0,
+          "answerNote": "",
+          "at": 0,
+          "revealEnd": 0,
+          "video": "media/IMG_9196.MOV"
+        },
+        {
+          "id": "v6",
+          "q": "Что выберет Тимоша?",
+          "options": [
+            {
+              "text": "Деньги",
+              "icon": ""
+            },
+            {
+              "text": "Конфетка",
+              "icon": ""
+            }
+          ],
+          "answer": 1,
+          "answerNote": "",
+          "at": 0,
+          "revealEnd": 0,
+          "video": "media/IMG_9197.MOV"
+        },
+        {
+          "id": "i-xw9fve",
+          "q": "Что выберет Тимоша?",
+          "options": [
+            {
+              "text": "Пюрешка",
+              "icon": ""
+            },
+            {
+              "text": "Часы",
+              "icon": ""
+            }
+          ],
+          "answer": 1,
+          "answerNote": "",
+          "video": "media/IMG_9192.MOV",
+          "at": 0,
+          "revealEnd": 0
+        },
+        {
+          "id": "i-do3clf",
+          "q": "Что выберет Тимоша?",
+          "options": [
+            {
+              "text": "Печенье",
+              "icon": ""
+            },
+            {
+              "text": "Помидор",
+              "icon": ""
+            }
+          ],
+          "answer": 0,
+          "answerNote": "",
+          "video": "media/IMG_9217.MOV",
+          "at": 0,
+          "revealEnd": 0
+        },
+        {
+          "id": "i-h32w7u",
+          "q": "Что выберет Тимоша?",
+          "options": [
+            {
+              "text": "Машина",
+              "icon": ""
+            },
+            {
+              "text": "Часы",
+              "icon": ""
+            }
+          ],
+          "answer": 1,
+          "answerNote": "",
+          "video": "media/IMG_9218.MOV",
+          "at": 0,
+          "revealEnd": 0
+        },
+        {
+          "id": "i-lodlc0",
+          "q": "Что выберет Тимоша?",
+          "options": [
+            {
+              "text": "Часы",
+              "icon": ""
+            },
+            {
+              "text": "Печенье",
+              "icon": ""
+            }
+          ],
+          "answer": 0,
+          "answerNote": "",
+          "video": "media/IMG_9219.MOV",
+          "at": 0,
+          "revealEnd": 0
+        },
+        {
+          "id": "i-wvv9dl",
+          "q": "Что выберет Алиса?",
+          "options": [
+            {
+              "text": "Планшет",
+              "icon": ""
+            },
+            {
+              "text": "Смешарики",
+              "icon": ""
+            },
+            {
+              "text": "Оба",
+              "icon": ""
+            }
+          ],
+          "answer": 0,
+          "answerNote": "",
+          "video": "media/IMG_9216.MOV",
+          "at": 0,
+          "revealEnd": 0
+        },
+        {
+          "id": "i-6t86sg",
+          "q": "Что выберет Алиса?",
+          "options": [
+            {
+              "text": "Мягкая игрушка",
+              "icon": ""
+            },
+            {
+              "text": "Лошадка",
+              "icon": ""
+            },
+            {
+              "text": "Оба",
+              "icon": ""
+            }
+          ],
+          "answer": 2,
+          "answerNote": "",
+          "video": "media/IMG_9198.MOV",
+          "at": 0,
+          "revealEnd": 0
+        },
+        {
+          "id": "i-42z1q0",
+          "q": "Что выберет Алиса?",
+          "options": [
+            {
+              "text": "Мама",
+              "icon": ""
+            },
+            {
+              "text": "Папа",
+              "icon": ""
+            },
+            {
+              "text": "Оба",
+              "icon": ""
+            }
+          ],
+          "answer": 2,
+          "answerNote": "",
+          "video": "media/IMG_9214.MOV",
+          "at": 0,
+          "revealEnd": 0
+        }
+      ]
+    },
+    {
+      "id": "c-photo",
+      "type": "photoGuess",
+      "enabled": true,
+      "subtitle": "Номер третий",
+      "title": "Угадай, кто на фото",
+      "rules": "На арене — портрет из волшебной машины. Угадайте, кто из гостей на нём спрятался!",
+      "lionLine": "Ох и чудеса… Кажется, я где-то видел этот нос!",
+      "pointsPerCorrect": 1,
+      "items": [
+        {
+          "id": "p1",
+          "q": "Кто это?",
+          "media": "",
+          "options": [],
+          "answer": null,
+          "answerNote": ""
+        },
+        {
+          "id": "p2",
+          "q": "Кто это?",
+          "media": "",
+          "options": [],
+          "answer": null,
+          "answerNote": ""
+        },
+        {
+          "id": "p3",
+          "q": "Кто это?",
+          "media": "",
+          "options": [],
+          "answer": null,
+          "answerNote": ""
+        }
+      ]
+    },
+    {
+      "id": "c-truefalse",
+      "type": "trueFalse",
+      "enabled": true,
+      "subtitle": "Антракт",
+      "title": "Правда или ложь",
+      "rules": "Львёнок рассказывает историю про Тимошу. Верите — кричите «правда», не верите — «ложь».",
+      "lionLine": "Клянусь гривой, половина из этого — чистая выдумка!",
+      "pointsPerCorrect": 1,
+      "items": [
+        {
+          "id": "t1",
+          "q": "Тимоша засыпает только под звук белого шума",
+          "answer": 1,
+          "answerNote": ""
+        },
+        {
+          "id": "t2",
+          "q": "Первое, что он сделал утром в свой день рождения, — показал язык",
+          "answer": 1,
+          "answerNote": ""
+        },
+        {
+          "id": "t3",
+          "q": "Он умеет открывать холодильник",
+          "answer": 0,
+          "answerNote": ""
+        },
+        {
+          "id": "t4",
+          "q": "Его любимое место в доме — под столом",
+          "answer": 0,
+          "answerNote": ""
+        },
+        {
+          "id": "t5",
+          "q": "Он боится пылесоса",
+          "answer": 1,
+          "answerNote": ""
+        },
+        {
+          "id": "t6",
+          "q": "Он уже пробовал есть песок",
+          "answer": 0,
+          "answerNote": ""
+        },
+        {
+          "id": "i-bhmnie",
+          "q": "Любит есть пластелин",
+          "answer": 0,
+          "answerNote": ""
+        },
+        {
+          "id": "i-lrmkpz",
+          "q": "Любит есть мел",
+          "answer": 0,
+          "answerNote": ""
+        },
+        {
+          "id": "i-rwpr0a",
+          "q": "Любит есть кашу",
+          "answer": 1,
+          "answerNote": ""
+        },
+        {
+          "id": "i-ca4okc",
+          "q": "Любит купаться",
+          "answer": 1,
+          "answerNote": ""
+        }
+      ]
+    },
+    {
+      "id": "c-audio",
+      "type": "audioGuess",
+      "enabled": false,
+      "subtitle": "Номер четвёртый",
+      "title": "Угадай мелодию",
+      "rules": "Звучит любимая песенка именинника. Кто первым назовёт — тот и молодец.",
+      "lionLine": "А ну-ка, оркестр! Только тс-с-с, картинку не показываем.",
+      "pointsPerCorrect": 1,
+      "items": [
+        {
+          "id": "a1",
+          "q": "Что за песенка?",
+          "audio": "",
+          "options": [],
+          "answer": null,
+          "answerNote": ""
+        },
+        {
+          "id": "a2",
+          "q": "Что за песенка?",
+          "audio": "",
+          "options": [],
+          "answer": null,
+          "answerNote": ""
+        },
+        {
+          "id": "a3",
+          "q": "Что за песенка?",
+          "audio": "",
+          "options": [],
+          "answer": null,
+          "answerNote": ""
+        }
+      ]
+    },
+    {
+      "id": "c-challenge",
+      "type": "challenge",
+      "enabled": true,
+      "subtitle": "Финальный номер",
+      "title": "Цирковые фанты",
+      "rules": "Львёнок раздаёт задания. Справился — получаешь балл от ведущего.",
+      "lionLine": "На арене — вы! Не бойтесь, львы сегодня добрые.",
+      "pointsPerCorrect": 1,
+      "items": [
+        {
+          "id": "f1",
+          "q": "Изобразите слона: хобот, походка и громкий трубный звук!",
+          "answerNote": ""
+        },
+        {
+          "id": "f2",
+          "q": "Спойте колыбельную голосом строгого дрессировщика",
+          "answerNote": ""
+        },
+        {
+          "id": "f3",
+          "q": "Пройдите по канату — по прямой линии, с бокалом в руке",
+          "answerNote": ""
+        },
+        {
+          "id": "f4",
+          "q": "Скажите тост, в котором есть слова «лев», «арена» и «Тимоша»",
+          "answerNote": ""
+        },
+        {
+          "id": "f5",
+          "q": "Покажите, как Тимоша ест кашу. Без слов!",
+          "answerNote": ""
+        },
+        {
+          "id": "f6",
+          "q": "Придумайте и покажите цирковой номер для именинника",
+          "answerNote": ""
+        }
+      ]
+    }
+  ],
+  "title": "Цирк Тимоши",
+  "playMode": "phones",
+  "interludes": true
+}

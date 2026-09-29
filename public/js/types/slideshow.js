@@ -14,6 +14,10 @@ export default {
   order: 120,
   prop: { intro: 'mic', question: '', reveal: '' },
   itemNoun: 'кадр',
+  fields: [
+    { k: 'media', f: 'soundtrack', kind: 'audio', label: 'Музыка фотоальбома', hint: 'Запустится вместе с альбомом из вкладки «Фото» на пульте.' },
+    { k: 'number', f: 'slideSeconds', label: 'Секунд на кадр', min: 3, max: 60 }
+  ],
 
   itemFields: [
     { k: 'media', f: 'media', kind: 'photo', label: 'Фотография', required: 'нет фото' },

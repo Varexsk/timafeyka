@@ -1,0 +1,41 @@
+{
+  "screen": "welcome",
+  "contestId": "c-quiz",
+  "itemId": "q1",
+  "phase": "intro",
+  "lionLine": "",
+  "fx": {
+    "type": "",
+    "seq": 0
+  },
+  "music": {
+    "on": false,
+    "seq": 0
+  },
+  "video": {
+    "action": "pause",
+    "seq": 0,
+    "at": 0
+  },
+  "rounds": {},
+  "roundOrder": [],
+  "contestSlices": {},
+  "lastAward": null,
+  "timer": null,
+  "spot": {
+    "on": false,
+    "seq": 0
+  },
+  "cake": null,
+  "awardLog": [],
+  "rehearsal": null,
+  "rosterPage": 0,
+  "intermission": null,
+  "ceremony": null,
+  "lionAct": null,
+  "capsuleStage": null,
+  "theme": {
+    "at": "",
+    "src": ""
+  }
+}

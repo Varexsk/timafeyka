@@ -8,3 +8,4 @@ export { intro } from './screens/intro.js';
 export { leaderboard } from './screens/board.js';
 export { finale } from './screens/finale.js';
 export { diploma } from './screens/diploma.js';
+export { recap } from './screens/recap.js';

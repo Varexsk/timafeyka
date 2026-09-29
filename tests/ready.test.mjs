@@ -76,9 +76,9 @@ test('заполненный вопрос не даёт претензий', asy
   const full = {
     quiz: { q: 'В', options: [{ text: 'А' }], answer: 0, media: '' },
     bets: { q: 'В', value: 3250, unit: 'г' },
-    videoChoice: { q: 'В', options: [{ text: 'А' }], answer: 0, at: 1.2, revealEnd: 3 },
+    videoChoice: { q: 'В', options: [{ text: 'А' }], answer: 0, video: 'media/a.mp4', at: 1.2, revealEnd: 3 },
     photoGuess: { q: 'В', options: [{ text: 'А' }], answer: 0, media: '/media/a.jpg' },
-    quotes: { q: 'В', options: [{ text: 'А' }], answer: 0 },
+    quotes: { q: 'В', author: 'g-1' },
     trueFalse: { q: 'В', answer: 1 },
     audioGuess: { q: 'В', options: [{ text: 'А' }], answer: 0, audio: '/media/a.mp3' },
     challenge: { q: 'З' }
@@ -98,9 +98,9 @@ test('пустой вопрос даёт ровно ожидаемые прет�
   const expected = {
     quiz: ['не отмечен правильный ответ'],
     bets: ['не заполнено правильное число'],
-    videoChoice: ['не отмечен правильный ответ', 'не проставлена метка паузы'],
+    videoChoice: ['не отмечен правильный ответ', 'не выбрано видео'],
     photoGuess: ['не отмечен правильный ответ', 'нет фото'],
-    quotes: ['не отмечен правильный ответ'],
+    quotes: ['не выбран автор'],
     trueFalse: ['не отмечен правильный ответ'],
     audioGuess: ['не отмечен правильный ответ', 'нет аудио'],
     challenge: []

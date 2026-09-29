@@ -1,0 +1,68 @@
+/* Компоновка сцены: существующие декорации и анимации сохранены. */
+.stage { --roster-w: 22rem; --scene-top: calc(var(--tent-h) + 4rem); }
+.screen { top: var(--scene-top); bottom: 14rem; gap: 1rem; }
+.has-roster .screen { right: calc(var(--wing-w) + var(--roster-w) + 2rem); }
+.screen > * { min-height: 0; flex-shrink: 0; }
+.screen .split { flex-shrink: 1; min-height: 0; }
+.has-roster .question { font-size: 3.2rem; }
+.has-roster .question--sm { font-size: 2.5rem; }
+.has-roster .option { font-size: 1.6rem; }
+.has-roster .options--many { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.scorebar {
+  left: auto; right: var(--wing-w); top: var(--scene-top); bottom: 11rem;
+  width: var(--roster-w); padding: 1rem; gap: 1rem;
+  display: flex; flex-direction: column; flex-wrap: nowrap;
+  align-items: stretch; justify-content: flex-start;
+  background: var(--cream); border: var(--stroke) solid var(--red);
+  border-radius: var(--radius); box-shadow: var(--sticker);
+}
+.roster-heading { display: flex; align-items: baseline; justify-content: space-between; gap: .5rem; }
+.roster-heading h2 { color: var(--red); font-size: 2rem; }
+.roster-heading > span { font-size: .85rem; font-weight: 800; }
+.roster-list { display: flex; flex-direction: column; gap: .8rem; min-height: 0; }
+.scorebar .chip { min-height: 4rem; border-radius: 1.2rem; padding: .45rem .7rem; gap: .65rem; }
+.chip-name { flex: 1; min-width: 0; overflow-wrap: anywhere; line-height: 1.15; font-size: 1.15rem; }
+.chip-name small { display: block; font-size: .75rem; margin-top: .2rem; color: var(--teal-deep); }
+.scorebar .chip .pts { flex: 0 0 auto; min-width: 2rem; text-align: right; }
+.scorebar .chip.is-hot { transform: scale(1.035) translateY(-.2rem); }
+.roster-pager { display: flex; align-items: center; justify-content: center; gap: .7rem; font-weight: 800; }
+.scorebar .roster-pager { margin-top: auto; font-size: .9rem; }
+.roster-pager .btn { padding: .3rem .8rem; }
+.lion-wrap { width: 15rem; left: 1.5%; bottom: 1.5rem; }
+.lion-wrap .thought { position: absolute; bottom: 1.5rem; left: 14rem; margin: 0; }
+.lion-wrap .thought .trail-1 { left: -1.2rem; bottom: 3rem; }
+.lion-wrap .thought .trail-2 { left: -2.5rem; bottom: 3.4rem; }
+.lion-wrap .thought .trail-3 { left: -3.5rem; bottom: 3.8rem; }
+/* Половинки «фото + варианты» теперь так же устроены и без табло — правила
+   переехали в screens.css, к остальной вёрстке этой пары. */
+.has-roster .video-wrap { max-height: 100%; }
+.round-bar { left: auto; right: calc(var(--wing-w) + 8.5rem); bottom: 2.5rem; transform: none; max-width: 38%; max-height: 8rem; overflow: auto; border-radius: 1.3rem; }
+.timer-ring { bottom: 2rem; }
+.screen--floor { bottom: calc(var(--ring-h) + .6rem); }
+.stage[data-screen="guests"] .family-grid,
+.stage[data-screen="guests"] .guest-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); width: min(100%, 66rem); gap: 1rem; }
+.stage[data-screen="guests"] .family-card { padding: .8rem; }
+.stage[data-screen="guests"] .family-card .avatar { width: 4rem; height: 4rem; }
+.stage[data-screen="guests"] .guest-card { padding: .7rem; }
+.stage[data-screen="guests"] .guest-card .avatar { width: 4rem; height: 4rem; }
+.stage[data-screen="leaderboard"] .board-row { padding: .4rem .8rem; }
+.stage[data-screen="leaderboard"] .board-row .avatar { width: 3rem; height: 3rem; }
+@media (max-aspect-ratio: 4/3) {
+  .stage { --wing-w: 4%; --roster-w: 18rem; }
+  .has-roster .screen { gap: .7rem; }
+  .has-roster .question { font-size: 2.4rem; }
+  .has-roster .option { font-size: 1.25rem; padding: .6rem; }
+  /* На квадратном экране фото встаёт над вариантами. Растянутая по ширине
+     колонка со снимком остаётся без высоты (кадр берёт её от колонки, а
+     колонка — от кадра), и фотография пропадала совсем. Поэтому колонка
+     сжимается по содержимому, высоту ей задаёт flex, а снимок держит
+     пропорции от высоты. */
+  .split { flex-direction: column; }
+  .split-media { align-self: center; min-height: 0; }
+  .split .media-frame { height: 100%; max-width: 100%; }
+  .split .media-frame img { width: auto; height: 100%; max-height: 100%; }
+  /* Столбец с вопросом встал под кадром — во всю ширину сцены карточки
+     упираются в кулисы, поэтому держим их в разумной колонке по центру. */
+  .split-side { flex: 0 0 auto; align-self: center; width: 100%; max-width: 44rem; }
+}
+@media print { .scorebar { display: none !important; } }

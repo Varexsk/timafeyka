@@ -119,7 +119,7 @@ const videoItems = videoPairs.map((p, i) => ({
   answer: null,
   answerNote: '',
   at: 0, // секунда, на которой видео встанет на паузу — проставь в кабинете
-  revealEnd: 0 // до какой секунды доиграть при раскрытии (0 = 6 секунд от паузы)
+  revealEnd: 0 // до какой секунды доиграть перед ответом (0 = до конца своего ролика или 6 секунд общего)
 }));
 
 const contests = [
@@ -222,10 +222,10 @@ const betItems = [
 ];
 
 const quoteItems = [
-  { id: 'z1', q: 'Впиши сюда цитату гостя про Тимошу', options: [], answer: null, answerNote: '' },
-  { id: 'z2', q: 'И ещё одну — кто это сказал?', options: [], answer: null, answerNote: '' },
-  { id: 'z3', q: 'И третью, посмешнее', options: [], answer: null, answerNote: '' },
-  { id: 'z4', q: 'И четвёртую, потрогательнее', options: [], answer: null, answerNote: '' }
+  { id: 'z1', q: 'Впиши сюда цитату гостя про Тимошу', author: '', answerNote: '' },
+  { id: 'z2', q: 'И ещё одну — кто это сказал?', author: '', answerNote: '' },
+  { id: 'z3', q: 'И третью, посмешнее', author: '', answerNote: '' },
+  { id: 'z4', q: 'И четвёртую, потрогательнее', author: '', answerNote: '' }
 ];
 
 contests.splice(1, 0, {

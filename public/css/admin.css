@@ -2,18 +2,22 @@
 
 html { font-size: 15px; }
 
+/* Кабинет остаётся плотным рабочим инструментом, но палитру берёт у праздника:
+   тёплая бумага вместо холодного серо-синего, фиолетовые чернила вместо
+   почти-чёрного, сиреневый акцент вместо дежурного синего. Акцент намеренно
+   не красный — красный здесь занят под «удалить». */
 :root {
-  --a-bg: #F4F6F9;
+  --a-bg: #F7F2E8;
   --a-panel: #FFFFFF;
-  --a-line: #E2E6EC;
-  --a-line-2: #EEF1F5;
-  --a-text: #1E2430;
-  --a-muted: #6B7484;
-  --a-accent: #2563EB;
-  --a-accent-soft: #EEF3FE;
-  --a-danger: #DC2626;
-  --a-ok: #16A34A;
-  --a-warn: #D97706;
+  --a-line: #E6DDCE;
+  --a-line-2: #F1EADC;
+  --a-text: #3A2350;
+  --a-muted: #7B6790;
+  --a-accent: #6F42D4;
+  --a-accent-soft: #F1EBFE;
+  --a-danger: #D9303C;
+  --a-ok: #2F9B4A;
+  --a-warn: #D9631B;
 }
 
 body.admin {
@@ -39,7 +43,13 @@ body.admin .ic { width: 1.05rem; height: 1.05rem; }
   background: var(--a-panel);
   border-bottom: 1px solid var(--a-line);
 }
-.a-top .brand { display: flex; align-items: center; gap: 0.5rem; font-weight: 900; font-size: 1.05rem; }
+.a-top .brand {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--font-slab);
+  font-size: 1.15rem;
+}
 .a-top .brand .ic { width: 1.3rem; height: 1.3rem; color: var(--a-accent); }
 .a-top .spacer { flex: 1; }
 .a-top .saved {
@@ -99,6 +109,7 @@ body.admin .ic { width: 1.05rem; height: 1.05rem; }
 }
 .panel > header {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 0.5rem;
   padding: 0.7rem 0.9rem;
@@ -121,7 +132,18 @@ body.admin .ic { width: 1.05rem; height: 1.05rem; }
 .ready-num small { font-size: 0.85rem; font-weight: 700; color: var(--a-muted); }
 .ready-bar { flex: 1; height: 0.5rem; background: var(--a-line); border-radius: 999px; overflow: hidden; }
 .ready-bar span { display: block; height: 100%; background: var(--a-ok); transition: width 0.3s; }
-.ready-list { margin-top: 0.7rem; display: flex; flex-direction: column; gap: 0.25rem; max-height: 15rem; overflow: auto; }
+.ready-list {
+  margin-top: 0.7rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  max-height: 15.4rem;
+  overflow: auto;
+  scrollbar-gutter: stable;
+  -webkit-mask: linear-gradient(180deg, #000 calc(100% - 1.6rem), transparent 100%);
+  mask: linear-gradient(180deg, #000 calc(100% - 1.6rem), transparent 100%);
+}
+.ready-list:not(:hover) { scrollbar-width: thin; }
 .ready-item {
   display: flex;
   align-items: center;
@@ -315,6 +337,21 @@ body.admin textarea { resize: vertical; }
 .marks-row { display: flex; gap: 0.4rem; align-items: flex-end; flex-wrap: wrap; }
 .marks-row .field { margin-bottom: 0; }
 .media-preview { margin-top: 0.4rem; max-height: 8rem; border-radius: 0.4rem; display: block; }
+.photo-select { display: flex; align-items: center; gap: .9rem; width: 100%; padding: .7rem; margin-bottom: .5rem; border: 1px solid var(--a-line, #ddd); border-radius: .7rem; background: #fff; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.photo-select:hover { border-color: var(--a-accent); background: var(--a-accent-soft); }
+.photo-select > img { width: 10rem; height: 8rem; object-fit: contain; background: #f4f2ee; border-radius: .45rem; flex: 0 0 auto; }
+.photo-select > span:not(.photo-placeholder) { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.photo-select strong, .photo-select small { display: block; }
+.photo-select small { margin-top: .4rem; opacity: .7; }
+.photo-placeholder { display: grid; place-items: center; width: 3rem; height: 3rem; background: #f4f2ee; border-radius: .45rem; }
+.photo-select:focus-visible, .photo-cell:focus-visible { outline: 3px solid var(--a-accent); outline-offset: 2px; }
+.picker .grid.photo-grid { grid-template-columns: repeat(auto-fill, minmax(145px, 1fr)); }
+.picker .photo-cell { font: inherit; color: inherit; padding: .5rem; text-align: left; background: #fff; }
+.picker .photo-cell img { display: block; width: 100%; height: 130px; object-fit: contain; border-radius: .35rem; background: #f4f2ee; margin-bottom: .5rem; }
+.photo-cell span { display: block; overflow-wrap: anywhere; font-size: .8rem; }
+.picker .photo-cell.is-selected { border-color: var(--a-accent); background: var(--a-accent-soft); }
+.photo-cell small { display: block; margin-top: .3rem; color: var(--a-accent); }
+@media (max-width: 500px) { .photo-select > img { width: 6rem; height: 6rem; } }
 
 /* ——— выбор картинки или аватара ——— */
 
@@ -371,6 +408,8 @@ body.admin textarea { resize: vertical; }
 
 .mode-switch {
   display: inline-flex;
+  flex: 0 0 auto;
+  white-space: nowrap;
   align-items: center;
   gap: 0.35rem;
   font-size: 0.8rem;
@@ -380,3 +419,16 @@ body.admin textarea { resize: vertical; }
 }
 .mode-switch input { width: auto; margin: 0; }
 .team-in { flex: 1 1 100%; font-size: 0.82rem; padding: 0.3rem 0.4rem; order: 9; }
+
+/* Кто из гостей выходит на конкурсы, а кто болеет за своих. */
+.g-line .play-in { width: 1.15rem; height: 1.15rem; flex: 0 0 auto; accent-color: var(--a-accent, #E63946); cursor: pointer; }
+.av-photo-pick { width: 3rem; height: 3rem; border-radius: 50%; object-fit: cover; }
+
+/* Блокнот ведущего: длинный текст, который читают и правят неделями. */
+.notebook {
+  width: 100%;
+  min-height: 24rem;
+  resize: vertical;
+  font: 14px/1.6 ui-monospace, "Cascadia Mono", Consolas, monospace;
+  white-space: pre-wrap;
+}

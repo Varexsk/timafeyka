@@ -15,6 +15,12 @@ import { esc } from '../util.js';
 import { icon } from '../icons.js';
 import { art, hasArt } from '../art.js';
 
+// Предпросмотр видео есть и у конкурса, и у каждого вопроса — поэтому у
+// каждого плеера свой id, а кнопки «с плеера» ищут его по номеру вопроса.
+export function videoPrevId(i) {
+  return i === undefined || i === '' ? 'vidPrev' : 'vidPrev-' + i;
+}
+
 // Общая проверка «отмечен ли правильный ответ» — нужна почти всем форматам.
 export function needAnswer(item) {
   const marked = Number.isInteger(item.answer) || (item.answerText || '').trim();
@@ -113,6 +119,23 @@ const RENDER = {
     return box(d, `<select ${tag(d, undefined, i)}>${options}</select>`);
   },
 
+  // Один из гостей праздника — сгруппированы по семьям, как сидят за столом.
+  guest(d, target, i, api) {
+    const state = api.state || {};
+    const guests = state.guests || [];
+    const cur = show(target, d.f);
+    const opt = (g) => `<option value="${esc(g.id)}"${g.id === cur ? ' selected' : ''}>${esc(g.name)}</option>`;
+    const groups = (state.teams || []).map((t) => {
+      const own = guests.filter((g) => g.teamId === t.id);
+      return own.length ? `<optgroup label="${esc(t.name)}">${own.map(opt).join('')}</optgroup>` : '';
+    }).join('');
+    const loose = guests.filter((g) => !(state.teams || []).some((t) => t.id === g.teamId)).map(opt).join('');
+    const lost = cur && !guests.some((g) => g.id === cur) ? `<option value="${esc(cur)}" selected>— гость удалён —</option>` : '';
+    return box(d, `<select ${tag(d, undefined, i)}>
+      <option value="">— не выбран —</option>${lost}${groups}${loose}
+    </select>`);
+  },
+
   choice(d, target, i) {
     const cur = target[d.f];
     return box(d, `<div style="display:flex;gap:.4rem">
@@ -147,20 +170,25 @@ const RENDER = {
   media(d, target, i, api) {
     const cur = show(target, d.f);
     const files = (api.media || []).filter((f) => f.kind === d.kind);
+    if (d.kind === 'photo') {
+      const name = files.find((f) => f.path === cur)?.name || (cur ? String(cur).split('/').pop() : 'Фото не выбрано');
+      return box(d, `<button type="button" class="photo-select" data-act="pickPhoto" ${tag(d, undefined, i)} aria-haspopup="dialog">
+        ${cur ? `<img src="${esc(cur)}" alt="Выбранная фотография">` : `<span class="photo-placeholder">${icon('photo')}</span>`}
+        <span><strong>${esc(name)}</strong><small>${cur ? 'Нажми, чтобы заменить фото' : 'Выбрать фото по миниатюрам'}</small></span>
+        ${icon('chevron-down')}
+      </button>${cur ? `<button type="button" class="a-btn a-btn--sm" data-act="clearPhoto" ${tag(d, undefined, i)}>Убрать фото</button>` : ''}`);
+    }
     const list = '<option value="">— не выбрано —</option>' + files.map((f) =>
       `<option value="${esc(f.path)}" ${f.path === cur ? 'selected' : ''}>${esc(f.name)}</option>`).join('');
 
     let preview = '';
-    if (d.kind === 'photo') {
-      preview = cur ? `<img class="media-preview" src="${esc(cur)}" alt="">` : '';
-    } else if (d.kind === 'audio') {
+    if (d.kind === 'audio') {
       preview = cur ? `<audio controls src="${esc(cur)}" style="width:100%;margin-top:.4rem"></audio>` : '';
     } else if (d.kind === 'video') {
-      // id="vidPrev" — по нему кнопки «с плеера» узнают текущее время.
       preview = cur
-        ? `<video class="vid-preview" id="vidPrev" src="${esc(cur)}" controls preload="metadata" style="margin-top:.4rem"></video>
-           <div class="muted" style="margin-top:.3rem">Поставь видео на нужном моменте и жми «с плеера» у вопроса.</div>`
-        : '<div class="muted" style="margin-top:.3rem">Загрузи видео ниже — потом выбери его здесь.</div>';
+        ? `<video class="vid-preview" id="${videoPrevId(i)}" src="${esc(cur)}" controls preload="metadata" style="margin-top:.4rem"></video>
+           <div class="muted" style="margin-top:.3rem">Поставь видео на нужном моменте и жми «с плеера» ${i === undefined ? 'у вопроса' : 'ниже'}.</div>`
+        : '<div class="muted" style="margin-top:.3rem">Загрузи видео в разделе «Медиа» внизу страницы — потом выбери его здесь.</div>';
     }
     return box(d, `<select ${tag(d, undefined, i)}>${list}</select>${preview}`);
   },
@@ -243,6 +271,18 @@ export function applyInput(list, el, target) {
 export function applyClick(list, btn, target, api) {
   const d = find(list, btn.dataset.fk, btn.dataset.f);
   if (!d) return false;
+  if (d.k === 'media' && d.kind === 'photo' && btn.dataset.act === 'pickPhoto') {
+    api.openPicker('photo', (value) => {
+      target[d.f] = value;
+      api.rerender();
+      api.save();
+    }, target[d.f] || '');
+    return 'handled';
+  }
+  if (d.k === 'media' && d.kind === 'photo' && btn.dataset.act === 'clearPhoto') {
+    target[d.f] = '';
+    return 'changed';
+  }
   const act = btn.dataset.act;
   const answerField = d.answerField || 'answer';
 
@@ -290,13 +330,13 @@ export function applyClick(list, btn, target, api) {
     return 'handled';
   }
   if (act === 'grab') {
-    const at = api.videoTime();
+    const at = api.videoTime(btn.dataset.i);
     if (at === null) return 'handled';
     target[btn.dataset.f] = Math.round(at * 10) / 10;
     return 'changed';
   }
   if (act === 'seek') {
-    api.videoSeek(Number(target[btn.dataset.f]) || 0);
+    api.videoSeek(Number(target[btn.dataset.f]) || 0, btn.dataset.i);
     return 'handled';
   }
   return false;

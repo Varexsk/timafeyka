@@ -8,6 +8,8 @@
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="css/theme.css">
   <link rel="stylesheet" href="css/remote.css">
+  <link rel="stylesheet" href="css/party.css">
+  <link rel="stylesheet" href="css/director.css">
 </head>
 <body class="remote">
   <div class="r-top">
@@ -36,6 +38,7 @@
   <div class="card" id="cardNow">
     <h3>Сейчас на экране</h3>
     <div id="nowBody"></div>
+    <details id="hostNotes" hidden><summary>Сценарий ведущего</summary><p style="white-space:pre-wrap"></p></details>
     <div class="item-dots" id="itemDots"></div>
   </div>
 
@@ -56,6 +59,7 @@
   <div class="card">
     <h3>Быстрые действия</h3>
     <div class="quick" id="quickBox"></div>
+    <button class="btn btn--wide" id="btnRepeat" style="margin-top:.6rem">Повторить вопрос на экране</button>
     <div class="say-row" style="margin-top:.6rem">
       <input id="sayText" placeholder="Что скажет Лёва?" autocomplete="off">
       <button class="btn btn--teal" id="sayBtn">Сказать</button>
@@ -65,11 +69,14 @@
 
   <div class="card">
     <h3>Перейти к конкурсу</h3>
+    <input class="jump-search" id="jumpSearch" type="search" placeholder="Поиск по номерам и вопросам"
+           aria-label="Поиск по программе" autocomplete="off">
     <div class="jump-list" id="jumpList"></div>
     <div style="display:flex;gap:.4rem;margin-top:.6rem">
       <button class="btn btn--primary" id="toFinale" style="flex:1">Финал</button>
       <button class="btn btn--yellow" id="toDiploma" style="flex:1">Диплом</button>
     </div>
+    <button class="btn btn--teal btn--wide" id="toRecap" style="margin-top:.4rem">Как это было</button>
     <button class="btn btn--purple btn--wide" id="startRehearsal" style="margin-top:.4rem">Включить репетицию</button>
   </div>
 

@@ -1,11 +1,14 @@
 // Пульт ведущего: листает показ, подсказывает правильные ответы, начисляет баллы.
 
 import * as bus from './bus.js';
+import { mountPartyRemote, updatePartyRemote } from './party-remote.js';
+import { mountDirectorRemote, updateDirectorRemote } from './director-remote.js';
+import { pagerHtml } from './roster.js';
 import { getType, loadTypes } from './engine/registry.js';
 import { buildCtx, activeContests } from './engine/ctx.js';
-import { voteInputs } from './engine/participation.js';
+import { voteInputs, voteBreakdown } from './engine/participation.js';
 import { clock, leftSeconds } from './engine/timer.js';
-import { esc, owners, isTeamMode, ownerAvatar, pointsOf } from './util.js';
+import { esc, owners, isTeamMode, ownerAvatar, pointsOf, fmtScore } from './util.js';
 import { mountSprite, icon } from './icons.js';
 import { mountArtSprite } from './art.js';
 import { mountAvatarSprite, avatar, hasAvatar } from './avatars.js';
@@ -21,7 +24,8 @@ const SCREEN_NAMES = {
   show: 'Конкурс',
   leaderboard: 'Таблица лидеров',
   finale: 'Финал',
-  diploma: 'Диплом'
+  diploma: 'Диплом',
+  recap: 'Как это было'
 };
 
 // Реквизит клоуна: то, чем разряжают паузу, когда номер не пошёл.
@@ -182,6 +186,8 @@ function render() {
   const phonesBtn = document.querySelector('[data-playmode]');
   if (phonesBtn) phonesBtn.classList.toggle('is-on', phonesOn());
   const ctx = ctxNow();
+  $('hostNotes').hidden = r.screen !== 'show' || !ctx.contest?.hostNotes;
+  $('hostNotes').querySelector('p').textContent = ctx.contest?.hostNotes || '';
 
   document.body.classList.toggle('is-rehearsal', !!r.rehearsal);
   renderTimer();
@@ -208,7 +214,7 @@ function render() {
       <div class="r-note">${esc(ctx.contest.rules || '')}</div>
       <div class="r-note">Показываем афишу. «Дальше» — первый вопрос.</div>`);
   } else {
-    setNowBody(ctx.type.remote(ctx) + voteInputs(ctx));
+    setNowBody(ctx.type.remote(ctx) + voteInputs(ctx) + voteBreakdown(ctx));
   }
 
   $('btnReveal').innerHTML = r.phase === 'reveal'
@@ -239,20 +245,45 @@ function render() {
       ${guestAvatar(o)}
       <span class="nm">${esc(o.name)}</span>
       <button class="btn btn--ghost" data-award="${esc(o.id)}" data-delta="${-pts}">${icon('minus')}</button>
-      <span class="pt">${o.score || 0}</span>
+      <span class="pt">${fmtScore(o.score)}</span>
       <button class="btn btn--primary" data-award="${esc(o.id)}" data-delta="${pts}">${icon('plus')} ${pts}</button>
     </div>`).join('');
 
-  $('guestRows').innerHTML = (rows || `<div class="r-note">${teamMode ? 'Семей' : 'Гостей'} пока нет — добавь ниже.</div>`) + undoLine();
+  $('guestRows').innerHTML = pagerHtml(state) + (rows || `<div class="r-note">${teamMode ? 'Семей' : 'Гостей'} пока нет — добавь ниже.</div>`) + undoLine();
 
-  $('jumpList').innerHTML = activeContests(state).map((c) => {
+  renderJumpList();
+}
+
+// Список номеров с поиском. При пятнадцати номерах по десять вопросов пролистать
+// до нужного сложнее, чем вспомнить слово из вопроса, — ищем и по вопросам тоже,
+// и тогда переход ведёт сразу на найденный вопрос.
+function renderJumpList() {
+  const r = state.runtime;
+  const q = ($('jumpSearch').value || '').trim().toLowerCase();
+  const rows = [];
+
+  for (const c of activeContests(state)) {
     const t = getType(c.type);
-    return `<div class="jump-item ${c.id === r.contestId && r.screen === 'show' ? 'is-current' : ''}" data-jump="${esc(c.id)}">
+    const items = c.items || [];
+    const hitTitle = !q || c.title.toLowerCase().includes(q) || (c.subtitle || '').toLowerCase().includes(q);
+    const hitItems = q ? items.filter((it) => String(it.q || '').toLowerCase().includes(q)) : [];
+    if (q && !hitTitle && !hitItems.length) continue;
+
+    rows.push(`<div class="jump-item ${c.id === r.contestId && r.screen === 'show' ? 'is-current' : ''}" data-jump="${esc(c.id)}">
       ${icon(t.icon)}
       <span class="nm">${esc(c.title)}</span>
-      <span class="cnt">${(c.items || []).length}</span>
-    </div>`;
-  }).join('');
+      <span class="cnt">${items.length}</span>
+    </div>`);
+
+    for (const it of hitItems) {
+      rows.push(`<div class="jump-item jump-item--q" data-jump="${esc(c.id)}" data-jump-item="${esc(it.id)}">
+        <span class="nm">${esc(String(it.q || '').slice(0, 70))}</span>
+      </div>`);
+    }
+  }
+
+  $('jumpList').innerHTML = rows.join('')
+    || `<div class="r-note">Ничего не нашлось${q ? ' по запросу «' + esc(q) + '»' : ''}.</div>`;
 }
 
 // Что начислили последним и кнопка «отменить» — чтобы промах правился одним
@@ -319,6 +350,8 @@ function wire() {
 
   document.body.addEventListener('click', (e) => {
     const award = e.target.closest('[data-award]');
+    const roster = e.target.closest('[data-roster]');
+    if (roster) { bus.send('rosterPage', { delta: Number(roster.dataset.roster) }); return; }
     if (award) {
       buzz();
       const delta = Number(award.dataset.delta);
@@ -399,7 +432,14 @@ function wire() {
     if (screen) { bus.send('goScreen', { screen: screen.dataset.screen }); return; }
 
     const jump = e.target.closest('[data-jump]');
-    if (jump) { bus.send('goto', { contestId: jump.dataset.jump, phase: 'intro' }); return; }
+    if (jump) {
+      // Нашли вопрос — открываем сразу его, а не афишу номера.
+      const itemId = jump.dataset.jumpItem;
+      bus.send('goto', itemId
+        ? { contestId: jump.dataset.jump, itemId, phase: 'question' }
+        : { contestId: jump.dataset.jump, phase: 'intro' });
+      return;
+    }
 
     const item = e.target.closest('[data-item]');
     if (item) {
@@ -463,6 +503,9 @@ function wire() {
     bus.send('fx', { type: 'tada' });
   });
   $('toDiploma').addEventListener('click', () => bus.send('goScreen', { screen: 'diploma' }));
+  $('toRecap').addEventListener('click', () => bus.send('goScreen', { screen: 'recap' }));
+  $('btnRepeat').addEventListener('click', () => bus.send('repeatQuestion', {}));
+  $('jumpSearch').addEventListener('input', renderJumpList);
 
   $('startRehearsal').addEventListener('click', () => {
     bus.send('rehearsal', { on: true });
@@ -478,7 +521,9 @@ mountSprite();
 mountArtSprite();
 mountAvatarSprite();
 bus.onStatus((ok) => document.body.classList.toggle('is-offline', !ok));
-bus.onState((next) => { state = next; render(); });
+mountPartyRemote();
+mountDirectorRemote();
+bus.onState((next) => { state = next; render(); updatePartyRemote(next); updateDirectorRemote(next); });
 // Цифра должна тикать и без новых кадров с сервера.
 setInterval(renderTimer, 250);
 wire();

@@ -61,8 +61,8 @@ export function lionSvg() {
   </g>
 
   <!-- ноги -->
-  <ellipse cx="82" cy="252" rx="15" ry="10" fill="#f0a04a"/>
-  <ellipse cx="118" cy="252" rx="15" ry="10" fill="#f0a04a"/>
+  <ellipse class="foot-left" cx="82" cy="252" rx="15" ry="10" fill="#f0a04a"/>
+  <ellipse class="foot-right" cx="118" cy="252" rx="15" ry="10" fill="#f0a04a"/>
 
   <!-- фрак -->
   <path d="M100 152 c -26 0 -38 14 -40 34 l -6 52 c -1 8 5 14 13 14 h 66 c 8 0 14 -6 13 -14 l -6 -52 c -2 -20 -14 -34 -40 -34 z" fill="url(#coatG)"/>
@@ -77,8 +77,10 @@ export function lionSvg() {
     <g class="lion-prop"></g>
     <circle cx="44" cy="204" r="10" fill="#ffc985"/>
   </g>
-  <path d="M136 172 c 16 4 22 16 20 30" stroke="#f0a04a" stroke-width="12" fill="none" stroke-linecap="round"/>
+  <g class="arm-right"><path d="M136 172 c 16 4 22 16 20 30" stroke="#f0a04a" stroke-width="12" fill="none" stroke-linecap="round"/>
   <circle cx="156" cy="204" r="10" fill="#ffc985"/>
+  </g>
+  <g class="gift-ticket"><rect x="7" y="154" width="63" height="39" rx="5" fill="#fff0b9" stroke="#b68032" stroke-width="3"/><path d="M19 162v23" stroke="#c59a49" stroke-dasharray="3 3"/><text x="45" y="181" font-size="22" text-anchor="middle" fill="#bd8435">★</text></g>
 
   <!-- бабочка -->
   <path d="M100 160 l -16 -8 v 16 z" fill="url(#goldG)"/>
@@ -86,6 +88,7 @@ export function lionSvg() {
   <circle cx="100" cy="160" r="4" fill="#c98b12"/>
 
   <!-- уши -->
+  <g class="lion-head">
   <circle cx="58" cy="62" r="15" fill="#f0a04a"/>
   <circle cx="58" cy="62" r="7.5" fill="#ff9db4"/>
   <circle cx="142" cy="62" r="15" fill="#f0a04a"/>
@@ -131,6 +134,7 @@ export function lionSvg() {
     <ellipse cx="100" cy="10" rx="24" ry="8" fill="#3a2560"/>
     <rect x="76" y="26" width="48" height="10" fill="#e03a45"/>
     <path d="M100 26 l 2.6 5.4 6 .8 -4.3 4.2 1 6 -5.3 -2.8 -5.3 2.8 1 -6 -4.3 -4.2 6 -.8 z" fill="url(#goldG)"/>
+  </g>
   </g>
 </svg>`;
 }
@@ -189,7 +193,9 @@ export const LINES = {
   question: ['Ну-ка, кто знает ответ? Не подглядывать!'],
   reveal: ['Та-дам! Вот как всё было на самом деле.'],
   leaderboard: ['Смотрим, кто у нас в лидерах!'],
-  finale: ['Аплодисменты! Победитель получает приз!']
+  finale: ['Аплодисменты! Победитель получает приз!'],
+  diploma: ['Диплом вручается лучшим из лучших!'],
+  recap: ['Вот такой у нас получился вечер. Спасибо, что были рядом!']
 };
 
 export function pickLine(key, seedIndex) {

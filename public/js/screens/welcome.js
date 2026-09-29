@@ -24,7 +24,11 @@ export function welcome(state, net) {
   return `
     <div class="eyebrow fade-in">Дамы и господа, добро пожаловать</div>
     <h1 class="title-xl gold-text fade-in">${esc(n.title)}</h1>
-    <div class="welcome-age">${esc(n.age)}</div>
+    <div class="welcome-center">
+      <img class="circus-illustration art-drum" src="/img/circus-drum.svg" alt="" width="240" height="200">
+      <div class="birthday-seal"><div class="welcome-age">${esc(n.age)}</div><span>Главная звезда цирка</span></div>
+      <img class="circus-illustration art-magic" src="/img/magic-hat.svg" alt="" width="240" height="200">
+    </div>
     <div class="title-m fade-in purple-text">${esc(n.hero)} празднует первый день рождения!</div>
     ${phones && play
     ? card(play, 'Наведи камеру — будешь играть', 'Гости отвечают со своих телефонов')

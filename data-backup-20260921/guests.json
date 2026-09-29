@@ -1,0 +1,194 @@
+{
+  "list": [
+    {
+      "id": "g-baba",
+      "name": "Бабушка Валя",
+      "avatar": "panda",
+      "color": "#22C1BC",
+      "score": 0,
+      "teamId": "t-guests"
+    },
+    {
+      "id": "g-deda",
+      "name": "Дедушка Женя",
+      "avatar": "giraffe",
+      "color": "#FF8A3D",
+      "score": 0,
+      "teamId": "t-guests"
+    },
+    {
+      "id": "g-fax4n5",
+      "name": "Бабушка Таня",
+      "avatar": "tiger",
+      "color": "#4CC96A",
+      "score": 0,
+      "teamId": "t-guests"
+    },
+    {
+      "id": "g-o9fmv8",
+      "name": "Дедушка Сережа",
+      "avatar": "zebra",
+      "color": "#FF8A3D",
+      "score": 0,
+      "teamId": "t-guests"
+    },
+    {
+      "id": "g-okfuwc",
+      "name": "Прабабушка Лина",
+      "avatar": "monkey",
+      "color": "#FF7BAC",
+      "score": 0,
+      "teamId": "t-grands"
+    },
+    {
+      "id": "g-uokscz",
+      "name": "Прабабушка Шура",
+      "avatar": "seal",
+      "color": "#FFC93C",
+      "score": 0,
+      "teamId": "t-grands"
+    },
+    {
+      "id": "g-p1y6yl",
+      "name": "Прабабушка Лена",
+      "avatar": "giraffe",
+      "color": "#E63946",
+      "score": 0,
+      "teamId": "t-grands"
+    },
+    {
+      "id": "g-9h9soi",
+      "name": "Прабабушка Валя",
+      "avatar": "poodle",
+      "color": "#9B6BFF",
+      "score": 0,
+      "teamId": "t-grands"
+    },
+    {
+      "id": "g-wng5em",
+      "name": "Тетя Лида",
+      "avatar": "raccoon",
+      "color": "#4A90D9",
+      "score": 0,
+      "teamId": "t-guests"
+    },
+    {
+      "id": "g-ygygm6",
+      "name": "Дядя Андрей",
+      "avatar": "parrot",
+      "color": "#22C1BC",
+      "score": 0,
+      "teamId": "t-guests"
+    },
+    {
+      "id": "g-8l0bpn",
+      "name": "Полина",
+      "avatar": "elephant",
+      "color": "#4CC96A",
+      "score": 0,
+      "teamId": "t-ax2ado"
+    },
+    {
+      "id": "g-rrzk4d",
+      "name": "Аня",
+      "avatar": "bear",
+      "color": "#FF8A3D",
+      "score": 0,
+      "teamId": "t-926oh3"
+    },
+    {
+      "id": "g-i7lwez",
+      "name": "Слава",
+      "avatar": "panda",
+      "color": "#FF7BAC",
+      "score": 0,
+      "teamId": "t-926oh3"
+    },
+    {
+      "id": "g-nftet3",
+      "name": "Алена",
+      "avatar": "fox",
+      "color": "#FFC93C",
+      "score": 0,
+      "teamId": "t-926oh3"
+    },
+    {
+      "id": "g-dphdlc",
+      "name": "Максим",
+      "avatar": "tiger",
+      "color": "#E63946",
+      "score": 0,
+      "teamId": "t-926oh3"
+    },
+    {
+      "id": "g-9jdn8a",
+      "name": "Вика",
+      "avatar": "zebra",
+      "color": "#9B6BFF",
+      "score": 0,
+      "teamId": "t-ax2ado"
+    },
+    {
+      "id": "g-uss9qk",
+      "name": "Владик",
+      "avatar": "monkey",
+      "color": "#4A90D9",
+      "score": 0,
+      "teamId": "t-ax2ado"
+    },
+    {
+      "id": "g-bn2nxh",
+      "name": "Рома",
+      "avatar": "seal",
+      "color": "#22C1BC",
+      "score": 0,
+      "teamId": "t-ax2ado"
+    },
+    {
+      "id": "g-kavp62",
+      "name": "Настя",
+      "avatar": "giraffe",
+      "color": "#4CC96A",
+      "score": 0,
+      "teamId": "t-ax2ado"
+    },
+    {
+      "id": "g-0emmqe",
+      "name": "Тетя Марина",
+      "avatar": "poodle",
+      "color": "#FF8A3D",
+      "score": 0,
+      "teamId": "t-guests"
+    }
+  ],
+  "teams": [
+    {
+      "id": "t-grands",
+      "name": "Прабабушки и дедушка",
+      "avatar": "owl",
+      "color": "#22C1BC",
+      "score": 0
+    },
+    {
+      "id": "t-guests",
+      "name": "Бабушки и дедушки",
+      "avatar": "bear",
+      "color": "#9B6BFF",
+      "score": 0
+    },
+    {
+      "id": "t-ax2ado",
+      "name": "Тети и Дяди",
+      "avatar": "giraffe",
+      "color": "#4A90D9",
+      "score": 0
+    },
+    {
+      "id": "t-926oh3",
+      "name": "Соколовы/Тактаевы",
+      "avatar": "clown",
+      "color": "#22C1BC",
+      "score": 0
+    }
+  ]
+}

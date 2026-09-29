@@ -38,6 +38,23 @@ function voteStats(votes, list) {
   return { answered, total: list.length, byValue };
 }
 
+// Кто именно из семьи что ответил. За семью играют несколько человек с разных
+// телефонов, сервер помнит каждого — ведущему это нужно видеть, иначе
+// «Бабушки: 3250» выглядит как чьё-то единоличное решение.
+function breakdown(vote, state) {
+  const by = vote && vote.by;
+  if (!by) return [];
+  const players = (state && state.play && state.play.players) || {};
+  return Object.entries(by)
+    .map(([playerId, e]) => ({
+      name: (players[playerId] || {}).name || 'Гость',
+      v: e.v,
+      at: e.at || 0,
+      n: e.n || 0
+    }))
+    .sort((a, b) => a.at - b.at || a.n - b.n);
+}
+
 // Выключенные конкурсы просто пропускаются — их нет ни в показе, ни в нумерации.
 export function activeContests(state) {
   return ((state && state.show && state.show.contests) || []).filter((c) => c.enabled !== false);
@@ -87,6 +104,8 @@ export function buildCtx(state) {
     // Сколько стоит верный ответ здесь и сейчас.
     points: pointsOf(contest),
     voteOf: (id) => (votes[id] === undefined ? null : votes[id].v),
+    // Ответы поимённо. Пусто, если за семью отвечал ведущий с пульта.
+    breakdownOf: (id) => breakdown(votes[id], state),
     hasVote: (id) => votes[id] !== undefined,
     stats: voteStats(votes, people)
   };

@@ -29,6 +29,26 @@ export default {
     const { item, phase } = ctx;
     const revealed = phase === 'reveal';
     const opts = item.options || [];
+
+    // Экран делится на три столбца: слева фотография, посередине вопрос со
+    // своими вариантами, справа — табло со счётом. Снимку достаётся вся высота
+    // сцены (снимки с телефона почти все вертикальные), а вопрос стоит над
+    // своими вариантами, а не через полэкрана от них.
+    if (item.media && opts.length) {
+      return `
+        ${counterHtml(ctx)}
+        <div class="split">
+          <div class="split-media">${mediaHtml(item.media)}</div>
+          <div class="split-side">
+            <div class="${questionClass(item.q)}">${esc(item.q)}</div>
+            ${optionsHtml(opts, item.answer, revealed)}
+          </div>
+        </div>
+        ${revealed ? answerHtml(item, opts) : ''}
+        ${revealed ? noteHtml(item) : ''}
+      `;
+    }
+
     return `
       ${counterHtml(ctx)}
       <div class="${questionClass(item.q)}">${esc(item.q)}</div>

@@ -1,12 +1,30 @@
 /* Экран гостя. Всё крупное: в него смотрят одним глазом, второй — на арену.
    Телефон в руках, свет приглушён, а у половины гостей на коленях ребёнок. */
 
+/* Корневой размер из theme.css привязан к экрану и рассчитан на телевизор:
+   на телефоне 390×844 формула даёт 6.8px и упирается в нижнюю границу clamp,
+   то есть весь экран гостя рисуется одиннадцатью пикселями. Пульт эту цифру
+   уже переопределяет — здесь про это просто забыли. */
+html { font-size: 17px; }
+
 body.play {
   min-height: 100vh;
   padding-bottom: 2rem;
   background:
     radial-gradient(120% 60% at 50% 0%, rgba(255, 201, 60, 0.3) 0%, rgba(255, 246, 229, 0) 60%),
-    var(--cream);
+    repeating-linear-gradient(90deg, #FFF6E5 0 2.2rem, #FFF0D6 2.2rem 4.4rem);
+}
+
+/* Полоса купола над шапкой: в этот экран весь вечер смотрят двадцать человек,
+   и до правки он был единственным местом без единого следа цирка. */
+body.play::before {
+  content: '';
+  position: fixed;
+  inset: 0 0 auto 0;
+  height: 0.55rem;
+  z-index: 20;
+  background: repeating-linear-gradient(90deg,
+    var(--red) 0 1.1rem, #FFFDF7 1.1rem 2.2rem);
 }
 
 /* ——— шапка ——— */
@@ -41,8 +59,9 @@ body.play {
 .p-top .sub { font-size: 0.8rem; color: var(--ink-soft); font-weight: 700; }
 
 .p-score {
-  font-family: var(--font-slab);
-  font-size: 1.5rem;
+  font-family: var(--font-num);
+  font-weight: 900;
+  font-size: 1.6rem;
   color: var(--orange-deep);
   padding-left: 0.4rem;
 }
@@ -119,26 +138,37 @@ body.play {
 
 .p-opt:active { transform: translateY(0.22rem); box-shadow: 0 0.08rem 0 rgba(58, 35, 80, 0.18); }
 
+/* Буквы вариантов повторяют цвета телевизора: гость поднимает глаза на экран,
+   видит «Б — бирюзовая», опускает в телефон — и там она такая же. Раньше на
+   телефоне все буквы были жёлтые, и связь между экранами рвалась. */
 .p-opt .letter {
   flex: 0 0 auto;
-  width: 2rem;
-  height: 2rem;
+  width: 2.1rem;
+  height: 2.1rem;
   display: grid;
   place-items: center;
   border-radius: 50%;
-  background: var(--yellow);
-  border: 0.14rem solid var(--yellow-deep);
+  background: var(--c, var(--yellow));
+  border: 0.14rem solid rgba(58, 35, 80, 0.25);
+  color: #fff;
   font-family: var(--font-slab);
 }
 
+.p-options .p-opt:nth-child(6n + 1) { --c: var(--red); }
+.p-options .p-opt:nth-child(6n + 2) { --c: var(--teal); }
+.p-options .p-opt:nth-child(6n + 3) { --c: var(--purple); }
+.p-options .p-opt:nth-child(6n + 4) { --c: var(--orange); }
+.p-options .p-opt:nth-child(6n + 5) { --c: var(--blue); }
+.p-options .p-opt:nth-child(6n + 6) { --c: var(--green); }
+
 .p-opt .pic { flex: 0 0 auto; width: 2.2rem; height: 2.2rem; }
 .p-opt .pic svg { width: 100%; height: 100%; }
-.p-opt .label { flex: 1; }
+.p-opt .label { flex: 1; min-width: 0; overflow-wrap: break-word; }
 
 .p-opt.is-mine { background: var(--yellow); border-color: var(--yellow-deep); }
 .p-opt.is-right { background: #D8F5DE; border-color: var(--green-deep); }
 .p-opt.is-wrong { opacity: 0.5; }
-.p-opt .tally { font-family: var(--font-slab); color: var(--ink-soft); }
+.p-opt .tally { font-family: var(--font-num); font-weight: 900; color: var(--ink-soft); }
 
 /* ——— число ——— */
 
@@ -169,6 +199,18 @@ body.play {
   background: #fff;
   color: var(--ink);
   resize: vertical;
+}
+
+.p-select {
+  width: 100%;
+  font: inherit;
+  font-size: 1.15rem;
+  font-weight: 800;
+  padding: 0.8rem 0.7rem;
+  border: 0.18rem solid var(--ink);
+  border-radius: var(--radius);
+  background: #fff;
+  color: var(--ink);
 }
 
 /* ——— крупная кнопка ——— */
@@ -291,3 +333,44 @@ body.play {
 body.is-offline .p-offline { display: block; }
 
 body.is-rehearsal .p-top { background: #EDE4FA; }
+
+/* Негромкая ссылка-возврат: «не та семья». */
+.p-link {
+  display: block;
+  width: 100%;
+  margin-top: .6rem;
+  padding: .5rem;
+  border: 0;
+  background: none;
+  color: var(--ink-soft, #7a6a55);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* Джокеры: по одному на семью за вечер. */
+.p-jokers { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; margin-top: .8rem; }
+.p-joker {
+  display: grid; gap: .15rem; padding: .6rem .5rem;
+  border: 2px solid var(--p-line, #e2d3b8); border-radius: .8rem;
+  background: #fff; font: inherit; color: inherit; cursor: pointer; text-align: center;
+}
+.p-joker b { font-size: 1rem; }
+.p-joker small { font-size: .78rem; opacity: .7; }
+.p-joker:disabled { opacity: .45; cursor: default; }
+.p-opt.is-out { opacity: .25; text-decoration: line-through; }
+
+/* Фотобудка: единственный способ для гостя добавить что-то своё на экран. */
+.p-booth { padding: .8rem 1rem 1.2rem; text-align: center; }
+.p-booth-btn {
+  display: block; padding: .9rem 1rem;
+  border: 2px dashed var(--p-line, #e2d3b8); border-radius: .9rem;
+  font-weight: 800; cursor: pointer; background: #fff;
+}
+.p-booth-hint { margin-top: .4rem; font-size: .85rem; opacity: .7; }
+
+/* Помощь зала на телефоне той семьи, которая её потратила. */
+.p-audience { margin-top: .8rem; padding: .7rem .8rem; border-radius: .8rem; background: rgba(0,0,0,.05); }
+.p-audience-row { display: flex; align-items: center; gap: .5rem; margin-top: .3rem; font-weight: 800; }
+.p-audience-bar { flex: 1; height: .7rem; border-radius: .35rem; background: rgba(0,0,0,.1); overflow: hidden; }
+.p-audience-bar > span { display: block; height: 100%; background: var(--p-accent, #E63946); }

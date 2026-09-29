@@ -184,6 +184,37 @@ const A = {
   }
 };
 
+// Эмоции и праздничный реквизит — те же цветные SVG, без зависимости от шрифта эмодзи.
+const face = (details) => `<circle cx="12" cy="12" r="10" fill="#FFD45C"/><path d="M6 5q4-3 8-2" stroke="#FFF1B5" stroke-width="1.5" stroke-linecap="round" fill="none"/>${details}`;
+const eyes = '<circle cx="8" cy="9" r="1.4" fill="#3A2350"/><circle cx="16" cy="9" r="1.4" fill="#3A2350"/>';
+const grin = '<path d="M6 13h12c-1 8-11 8-12 0Z" fill="#773B45"/><path d="M7 13h10v2H7Z" fill="white"/>';
+Object.assign(A, {
+  smile: { ru: 'Улыбка радость', svg: face(eyes+'<path d="M7 14q5 6 10 0" stroke="#3A2350" stroke-width="1.8" fill="none" stroke-linecap="round"/>') },
+  laugh: { ru: 'Смех веселье', svg: face('<path d="m5 10 3-2 3 2m2 0 3-2 3 2" stroke="#3A2350" stroke-width="1.5" fill="none"/>'+grin) },
+  wink: { ru: 'Подмигивание хитрость', svg: face('<circle cx="8" cy="9" r="1.4" fill="#3A2350"/><path d="m14 10 2-2 2 2M7 14q5 6 10 0" stroke="#3A2350" stroke-width="1.6" fill="none" stroke-linecap="round"/>') },
+  wow: { ru: 'Удивление вау', svg: face(eyes+'<ellipse cx="12" cy="16" rx="2.5" ry="3" fill="#3A2350"/>') },
+  sad: { ru: 'Грусть печаль', svg: face(eyes+'<path d="M7 17q5-6 10 0" stroke="#3A2350" stroke-width="1.7" fill="none" stroke-linecap="round"/>') },
+  cry: { ru: 'Слёзы плач', svg: face(eyes+'<path d="M7 17q5-6 10 0" stroke="#3A2350" stroke-width="1.5" fill="none"/><path d="M18 11q-5 6 0 6t0-6Z" fill="#4A90D9"/>') },
+  cool: { ru: 'Круто очки', svg: face('<path d="M3 7h18v2h-1l-1 4h-5l-1-3h-2l-1 3H5L4 9H3Z" fill="#3A2350"/><path d="M9 17q4 3 7-1" stroke="#3A2350" stroke-width="1.6" fill="none" stroke-linecap="round"/>') },
+  love: { ru: 'Влюблённость сердечки', svg: face('<path d="M8 12 4 8c-2-4 3-5 4-2 2-3 6-1 4 2Zm9 0-4-4c-2-4 3-5 4-2 2-3 6-1 4 2Z" fill="#E63946"/><path d="M8 15q4 5 8 0" stroke="#773B45" stroke-width="1.6" fill="none"/>') },
+  sleepy: { ru: 'Сонный зевота', svg: face('<path d="M5 10q3 3 6 0m2 0q3 3 6 0" stroke="#3A2350" stroke-width="1.5" fill="none"/><ellipse cx="12" cy="16" rx="2" ry="2.5" fill="#3A2350"/>') },
+  tongue: { ru: 'Дразнилка язык', svg: face(eyes+'<path d="M6 13q6 9 12 0Z" fill="#3A2350"/><path d="M11 15h5v4a2.5 2.5 0 0 1-5 0Z" fill="#F679A0"/>') },
+  thinking: { ru: 'Раздумье думаю', svg: face(eyes+'<path d="m6 5 4 1m4-1 4-1M9 16h5" stroke="#3A2350" stroke-width="1.5" stroke-linecap="round"/><path d="m15 21-1-5 3-2 2 1-2 2 2 4Z" fill="#EDA945"/>') },
+  party: { ru: 'Праздничный смайлик', svg: face(eyes+grin+'<path d="m2 8 3-8 7 5Z" fill="#9B6BFF"/><circle cx="5" cy="3" r="1" fill="#FFC93C"/><path d="m17 15 6 2-1 3-6-3Z" fill="#22C1BC"/>') },
+  gift: { ru: 'Подарок сюрприз', svg: '<rect x="4" y="10" width="16" height="11" rx="2" fill="#E63946"/><rect x="2" y="7" width="20" height="5" rx="1" fill="#FF7BAC"/><path d="M10 7h4v14h-4Z" fill="#FFC93C"/><path d="M12 7C1 7 6-3 12 7c6-10 11 0 0 0Z" stroke="#D9A00F" stroke-width="2" fill="none"/>' },
+  icecream: { ru: 'Мороженое сладкое', svg: '<path d="m6 10 6 13 6-13Z" fill="#DCA663"/><path d="m8 12 6 6m-4-3 5-3" stroke="#B78249" stroke-width="1.2"/><path d="M5 10c-3-4 1-6 3-6 0-5 8-5 8 0 3-1 7 4 3 7Z" fill="#FF9CC3"/>' },
+  watermelon: { ru: 'Арбуз ягода', svg: '<path d="M1 7h22C21 25 3 25 1 7Z" fill="#5FBF5F"/><path d="M3 7h18C19 22 5 22 3 7Z" fill="#FFF0CE"/><path d="M5 7h14C17 19 7 19 5 7Z" fill="#F26070"/><path d="m8 10 1 2m6-2-1 2m-2 2v1" stroke="#3A2350" stroke-width="1.3" stroke-linecap="round"/>' },
+  pizza: { ru: 'Пицца еда', svg: '<path d="m3 4 18 1-10 17Z" fill="#FFCE68"/><path d="m3 4 18 1" stroke="#CC8E4B" stroke-width="4" stroke-linecap="round"/><circle cx="9" cy="9" r="2" fill="#E63946"/><circle cx="14" cy="12" r="2" fill="#E63946"/>' },
+  train: { ru: 'Поезд паровоз', svg: '<path d="M3 9h10v9H3Zm10-6h7v15h-7Z" fill="#22C1BC"/><path d="M5 4h4v5H5Z" fill="#E63946"/><rect x="15" y="5" width="3" height="5" rx=".5" fill="#BFE7F5"/><circle cx="6" cy="19" r="3" fill="#3A2350"/><circle cx="17" cy="19" r="3" fill="#3A2350"/><path d="M3 2h4" stroke="#AAB8C9" stroke-width="2" stroke-linecap="round"/>' },
+  rocket: { ru: 'Ракета космос', svg: '<path d="m8 17 4 7 4-7" fill="#FF8A3D"/><path d="m7 11-5 8 6-1m9-7 5 8-6-1" fill="#E63946"/><path d="M12 1C6 6 6 14 8 18h8c2-4 2-12-4-17Z" fill="#DCE8F2"/><circle cx="12" cy="9" r="3" fill="#4A90D9"/>' },
+  butterfly: { ru: 'Бабочка насекомое', svg: '<path d="M11 10C1-4-3 14 9 13-1 18 8 26 11 16m2-6C23-4 27 14 15 13c10 5 1 13-2 3" fill="#B28AEE"/><path d="M12 8v11m0-11-3-4m3 4 3-4" stroke="#3A2350" stroke-width="1.8" stroke-linecap="round"/><circle cx="6" cy="9" r="2" fill="#FFC93C"/><circle cx="18" cy="9" r="2" fill="#FFC93C"/>' },
+  flower: { ru: 'Цветок букет', svg: '<path d="M12 12v11m0-3q-8 0-7-6 7 0 7 6" fill="#5FBF5F" stroke="#5FBF5F" stroke-width="2"/><g fill="#FF7BAC"><circle cx="12" cy="4" r="4"/><circle cx="6" cy="8" r="4"/><circle cx="18" cy="8" r="4"/><circle cx="8" cy="14" r="4"/><circle cx="16" cy="14" r="4"/></g><circle cx="12" cy="9" r="4" fill="#FFC93C"/>' },
+  drum: { ru: 'Барабан цирк', svg: '<path d="M3 9h18v11c-4 3-14 3-18 0Z" fill="#E63946"/><path d="m4 12 4 8 4-8 4 8 4-8" stroke="#FFC93C" stroke-width="2" fill="none"/><ellipse cx="12" cy="9" rx="9" ry="3" fill="#FFEBC9"/><path d="m5 2 11 5m3-5L8 7" stroke="#8A5A34" stroke-width="2" stroke-linecap="round"/>' },
+  magic: { ru: 'Фокус шляпа волшебство', svg: '<path d="m6 8 2 11h8l2-11Z" fill="#523771"/><ellipse cx="12" cy="8" rx="6" ry="2" fill="#3A2350"/><path d="M8 15h8v3H8Z" fill="#E63946"/><ellipse cx="12" cy="20" rx="10" ry="2" fill="#674B89"/><path d="m19 1 1 3 3 1-3 1-1 3-1-3-3-1 3-1Z" fill="#FFC93C"/><path d="m8 6-2-4m6 3 1-4" stroke="#22C1BC" stroke-width="2" stroke-linecap="round"/>' },
+  crown: { ru: 'Корона победитель', svg: '<path d="m3 6 5 5 4-8 4 8 5-5-2 14H5Z" fill="#FFC93C"/><path d="M5 17h14" stroke="#D9A00F" stroke-width="2"/><circle cx="12" cy="13" r="2" fill="#E63946"/>' },
+  rainbow: { ru: 'Радуга погода', svg: '<path d="M3 19v-5a9 9 0 0 1 18 0v5" stroke="#E63946" stroke-width="3"/><path d="M6 19v-5a6 6 0 0 1 12 0v5" stroke="#FFC93C" stroke-width="3"/><path d="M9 19v-5a3 3 0 0 1 6 0v5" stroke="#22C1BC" stroke-width="3"/>' }
+});
+
 // Цифры 1–7 — для вопросов вроде «в какой день недели».
 const NUM_COLORS = ['#E63946', '#FF8A3D', '#FFC93C', '#5FBF5F', '#22C1BC', '#4A90D9', '#9B6BFF'];
 for (let n = 1; n <= 7; n++) {

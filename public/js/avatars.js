@@ -1,4 +1,4 @@
-// Аватары гостей — двенадцать зверей-артистов цирка.
+// Аватары гостей — звери и артисты цирка.
 // Рисуются в одной манере с львёнком Лёвой: круглая голова, глаза с бликом, румянец.
 
 const EYE = (lx, rx, y, r) => `
@@ -228,6 +228,25 @@ const A = {
   }
 };
 
+// Новые артисты используют те же глаза и румянец, что и исходная труппа.
+const roundFace = (color, ears = '', details = '') => `${ears}<circle cx="50" cy="54" r="32" fill="${color}"/>${details}${EYE(38, 62, 49, 5)}${BLUSH(28, 72, 64, 6)}${SMILE(68, 3)}`;
+Object.assign(A, {
+  lion: { ru: 'Львёнок', color: '#F4AA36', svg: `<path d="M50 5 62 13 78 12 83 28 96 40 89 55 93 73 77 80 65 94 49 87 32 93 22 79 8 72 13 55 5 40 18 29 22 13 39 14Z" fill="#D47B24"/>${roundFace('#FFC96A', '', '<ellipse cx="50" cy="69" rx="18" ry="12" fill="#FFE8B9"/><path d="m44 61 6 7 6-7Z" fill="#9E4538"/>')}` },
+  rabbit: { ru: 'Кролик', color: '#E6DDEF', svg: roundFace('#E6DDEF', '<ellipse cx="33" cy="24" rx="11" ry="23" fill="#E6DDEF"/><ellipse cx="67" cy="24" rx="11" ry="23" fill="#E6DDEF"/><ellipse cx="33" cy="22" rx="5" ry="16" fill="#F6A7C6"/><ellipse cx="67" cy="22" rx="5" ry="16" fill="#F6A7C6"/>', '<rect x="45" y="70" width="10" height="10" rx="2" fill="white"/><path d="m44 62 6 6 6-6Z" fill="#E875A0"/>') },
+  cat: { ru: 'Котёнок', color: '#FFB866', svg: roundFace('#FFB866', '<path d="M19 41 16 8 41 27M59 27 84 8 81 41" fill="#FFB866"/><path d="m22 16 3 17 10-7m30 0 10 7 3-17" fill="#F38B99"/>', '<path d="m45 61 5 6 5-6Z" fill="#BB6572"/><path d="m17 62 15 3m-15 7 15-2m36-5 15-3m-15 8 15 2" stroke="#9B633C" stroke-width="2" stroke-linecap="round"/>') },
+  puppy: { ru: 'Щенок', color: '#D59C6A', svg: roundFace('#E4B781', '<ellipse cx="19" cy="44" rx="15" ry="27" fill="#8F603F"/><ellipse cx="81" cy="44" rx="15" ry="27" fill="#8F603F"/>', '<ellipse cx="50" cy="66" rx="18" ry="14" fill="#FFF0D4"/><ellipse cx="50" cy="62" rx="7" ry="5" fill="#3A2350"/>') },
+  koala: { ru: 'Коала', color: '#AAB8C9', svg: roundFace('#AAB8C9', '<circle cx="18" cy="31" r="18" fill="#92A1B5"/><circle cx="82" cy="31" r="18" fill="#92A1B5"/><circle cx="18" cy="31" r="11" fill="#DDE3EC"/><circle cx="82" cy="31" r="11" fill="#DDE3EC"/>', '<ellipse cx="50" cy="62" rx="9" ry="12" fill="#4F5362"/>') },
+  piglet: { ru: 'Поросёнок', color: '#F3A0B7', svg: roundFace('#F3A0B7', '<path d="M19 42Q5 3 37 20L42 32M58 32 63 20Q95 3 81 42" fill="#E67F9C"/>', '<ellipse cx="50" cy="66" rx="17" ry="12" fill="#E67F9C"/><circle cx="44" cy="66" r="3" fill="#A74A71"/><circle cx="56" cy="66" r="3" fill="#A74A71"/>') },
+  mouse: { ru: 'Мышонок', color: '#B9ADCB', svg: roundFace('#B9ADCB', '<circle cx="21" cy="23" r="19" fill="#B9ADCB"/><circle cx="79" cy="23" r="19" fill="#B9ADCB"/><circle cx="21" cy="23" r="12" fill="#F5B7D2"/><circle cx="79" cy="23" r="12" fill="#F5B7D2"/>', '<circle cx="50" cy="64" r="6" fill="#D47EA2"/><path d="m17 62 14 4m-14 8 14-3m38-5 14-4m-14 9 14 3" stroke="#80708F" stroke-width="2"/>') },
+  frog: { ru: 'Лягушонок', color: '#7BCC75', svg: `<circle cx="31" cy="31" r="17" fill="#7BCC75"/><circle cx="69" cy="31" r="17" fill="#7BCC75"/><ellipse cx="50" cy="60" rx="38" ry="28" fill="#7BCC75"/><circle cx="31" cy="32" r="11" fill="#F1FFDD"/><circle cx="69" cy="32" r="11" fill="#F1FFDD"/>${EYE(31, 69, 32, 5)}<path d="M30 62q20 19 40 0" stroke="#3D794B" stroke-width="3" fill="none" stroke-linecap="round"/>${BLUSH(23, 77, 57, 6)}` },
+  penguin: { ru: 'Пингвин', color: '#55667C', svg: `<ellipse cx="50" cy="52" rx="34" ry="42" fill="#55667C"/><path d="M50 34C25 7 9 79 50 86 91 79 75 7 50 34Z" fill="#FFF9EB"/>${EYE(37, 63, 47, 5)}<path d="m40 60 10-5 10 5-10 10Z" fill="#FFAE3F"/>${BLUSH(28, 72, 62, 6)}<path d="m35 78 15 7-15 8Zm30 0-15 7 15 8Z" fill="#E63946"/>` },
+  owl: { ru: 'Совёнок', color: '#B78561', svg: `<path d="M18 11 41 26h18L82 11v42c0 49-64 49-64 0Z" fill="#B78561"/><circle cx="33" cy="49" r="20" fill="#FFE2B2"/><circle cx="67" cy="49" r="20" fill="#FFE2B2"/>${EYE(33, 67, 48, 8)}<path d="m44 64 6 11 6-11Z" fill="#ED9639"/><path d="m36 79 4 4m8-4 4 4m8-4 4 4" stroke="#865D45" stroke-width="3" stroke-linecap="round"/>` },
+  hippo: { ru: 'Бегемотик', color: '#A99ACD', svg: roundFace('#A99ACD', '<circle cx="26" cy="23" r="10" fill="#9381BC"/><circle cx="74" cy="23" r="10" fill="#9381BC"/>', '<ellipse cx="50" cy="68" rx="29" ry="18" fill="#C2B3DF"/><circle cx="35" cy="62" r="3" fill="#8D76AE"/><circle cx="65" cy="62" r="3" fill="#8D76AE"/>') },
+  unicorn: { ru: 'Единорог', color: '#F5DCEC', svg: `<path d="M22 33Q5 63 22 85L38 90 34 32Z" fill="#A586E4"/>${roundFace('#F5DCEC', '<path d="m23 38 1-28 19 20m14 0 19-20 1 28" fill="#F5DCEC"/>', '<path d="M25 39q9-26 39-17l12 16-23-3-17 12Z" fill="#E7A1CF"/>')}<path d="m42 25 8-24 8 24Z" fill="#FFC93C"/><path d="m46 14 8 3m-10 3 12 3" stroke="#D9A00F" stroke-width="2"/>` },
+  clown: { ru: 'Клоун', color: '#FFD3B0', svg: `<g fill="#EC6A42"><circle cx="18" cy="49" r="16"/><circle cx="17" cy="67" r="14"/><circle cx="82" cy="49" r="16"/><circle cx="83" cy="67" r="14"/></g><circle cx="50" cy="54" r="31" fill="#FFE0BA"/>${EYE(38,62,48,5)}<ellipse cx="50" cy="71" rx="16" ry="10" fill="white"/><path d="M39 69q11 15 22 0" stroke="#E63946" stroke-width="3" fill="none"/><circle cx="50" cy="61" r="8" fill="#E63946"/><path d="m31 29 19-27 19 27Z" fill="#22C1BC"/><circle cx="50" cy="8" r="6" fill="#FFC93C"/><circle cx="48" cy="23" r="4" fill="#FFC93C"/>` },
+  magician: { ru: 'Фокусник', color: '#FFD3B0', svg: `${roundFace('#FFD3B0', '<path d="M19 53V36c0-33 62-33 62 0v17l-12-18H31Z" fill="#6B4A39"/>')}<path d="M27 4h46l-5 25H32Z" fill="#523771"/><path d="M31 20h38v8H31Z" fill="#E63946"/><rect x="20" y="27" width="60" height="7" rx="3" fill="#523771"/><path d="m34 88 16 5-16 5Zm32 0-16 5 16 5Z" fill="#22C1BC"/><path d="m50 9 2 4 4 1-3 3 1 4-4-2-4 2 1-4-3-3 4-1Z" fill="#FFC93C"/>` }
+});
+
 export const AVATAR_IDS = Object.keys(A);
 export const AVATAR_LABELS = AVATAR_IDS.reduce((acc, k) => { acc[k] = A[k].ru; return acc; }, {});
 export const AVATAR_COLORS = AVATAR_IDS.reduce((acc, k) => { acc[k] = A[k].color; return acc; }, {});
@@ -241,6 +260,17 @@ export function avatarSprite() {
 export function avatar(id, cls) {
   if (!A[id]) return '';
   return `<svg class="av-svg ${cls || ''}" aria-hidden="true"><use href="#v-${id}"/></svg>`;
+}
+
+// Аватаром может быть не только нарисованный зверь, но и своя картинка из
+// «Медиа»: портрет гостя или зверь, сделанный из его лица нейросетью.
+// Отличаем по пути — у зверей идентификаторы без косых черт.
+export function isPhotoAvatar(value) {
+  return typeof value === 'string' && /^\/?media\//.test(value) && !value.includes('..');
+}
+
+export function photoAvatar(value, cls) {
+  return `<img class="av-photo ${cls || ''}" src="${String(value).replace(/"/g, '&quot;')}" alt="" loading="lazy">`;
 }
 
 export function hasAvatar(id) {
