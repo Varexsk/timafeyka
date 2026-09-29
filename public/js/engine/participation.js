@@ -5,7 +5,7 @@
 // вводит ведущий; ответы ложатся в ту же структуру раунда, что потом придёт
 // с телефонов гостей, — на экране формат не различает, откуда они взялись.
 
-import { esc, ownerAvatar, optionsOf, LETTERS } from '../util.js';
+import { esc, ownerAvatar } from '../util.js';
 import { icon } from '../icons.js';
 
 export function voteKind(ctx) {
@@ -22,39 +22,15 @@ export function voteInputs(ctx) {
   return '';
 }
 
-// «Помощь зала»: как разошлись голоса стола. Правильный ответ не раскрывается —
-// зал ведь тоже может ошибаться, в этом вся соль подсказки.
-export function audienceHtml(ctx) {
-  const round = ctx.round;
-  if (!round || !round.audience || ctx.phase === 'reveal') return '';
-  const opts = optionsOf(ctx.type, ctx.item);
-  if (!opts.length) return '';
-
-  const counts = opts.map(() => 0);
-  let total = 0;
-  for (const vote of Object.values(round.votes || {})) {
-    const voices = vote && vote.by ? Object.values(vote.by) : [vote];
-    for (const voice of voices) {
-      const at = Number(voice && voice.v);
-      if (!Number.isInteger(at) || at < 0 || at >= counts.length) continue;
-      counts[at] += 1;
-      total += 1;
-    }
-  }
-
+// «Помощь зала» на телевизоре — только объявление: кто взял джокер. Сам расклад
+// голосов видят телефоны этой семьи, иначе подсказка доставалась бы всем.
+export function audienceCallHtml(ctx, ownerIds) {
+  const who = (ownerIds || []).map((id) => ctx.owners.find((o) => o.id === id)).filter(Boolean);
+  if (!who.length) return '';
   return `<div class="audience-poll">
     <div class="audience-title">Помощь зала</div>
-    <div class="audience-bars">
-      ${opts.map((o, i) => {
-    const share = total ? Math.round((counts[i] / total) * 100) : 0;
-    return `<div class="audience-row">
-          <span class="audience-letter">${LETTERS[i] || i + 1}</span>
-          <span class="audience-bar"><span style="width:${share}%"></span></span>
-          <span class="audience-share">${share}%</span>
-        </div>`;
-  }).join('')}
-    </div>
-    ${total ? '' : '<div class="audience-empty">Зал ещё думает</div>'}
+    ${who.map((o) => `<div class="audience-call">${ownerAvatar(o, 'audience-av')}<b>${esc(o.name)}</b></div>`).join('')}
+    <div class="audience-empty">${who.length > 1 ? 'смотрят' : 'смотрит'} на телефоне, как ответил зал</div>
   </div>`;
 }
 

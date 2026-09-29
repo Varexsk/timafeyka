@@ -24,7 +24,6 @@ function playShow(show) {
     heroShort: show.heroShort,
     lion: show.lion,
     age: show.age,
-    capsule: { open: !!show.capsule?.open, count: show.capsule?.letters?.length || 0 },
     // Снимки фотобудки не секрет: гость видит, сколько уже наснимала его семья.
     booth: (show.booth || []).map((p) => ({ id: p.id, src: p.src, ownerId: p.ownerId })),
     mode: show.mode,
@@ -44,6 +43,8 @@ function playShow(show) {
           id: it.id,
           q: it.q,
           unit: it.unit,
+          // Приз лота в аукционе — не секрет, за него и торгуются.
+          prize: it.prize,
           options: (it.options || []).map((o) => ({
             text: typeof o === 'string' ? o : o.text,
             icon: typeof o === 'string' ? '' : o.icon
@@ -98,9 +99,9 @@ function playRound(round, ownerId, revealed) {
   // она. Какие именно, решил сервер: в ответе телефона нет ничего, по чему
   // можно вычислить правильный.
   if (ownerId && round.fifty && round.fifty[ownerId]) out.hidden = round.fifty[ownerId];
-  // «Помощь зала» — общая: как разошлись голоса, видят все, но чей голос
-  // какой — по-прежнему нет.
-  if (round.audience) out.audience = voiceTally(votes);
+  // «Помощь зала» — только у той семьи, что её взяла: остальные за подсказку
+  // не платили. Чей голос какой — не видно и ей.
+  if (ownerId && round.audience && round.audience[ownerId]) out.audience = voiceTally(votes);
 
   // Карман формата — общий: колесо должно остановиться одинаково у всех.
   if (round.slice) out.slice = round.slice;

@@ -11,8 +11,10 @@ export function welcome(state, net) {
   const play = (net && net.playUrl) || '';
   const remote = (net && net.remoteUrl) || '';
 
-  const card = (url, label, hint) => `
-    <div class="connect-card fade-in">
+  // Гостевой QR наводят с другого конца комнаты — он крупный. Пульт ведущему
+  // нужен один раз, его карточка остаётся скромной.
+  const card = (url, label, hint, big) => `
+    <div class="connect-card${big ? ' connect-card--play' : ''} fade-in">
       ${qrSvg(url, { dark: '#3A2350', light: '#ffffff' })}
       <div>
         <div class="label">${esc(label)}</div>
@@ -31,7 +33,7 @@ export function welcome(state, net) {
     </div>
     <div class="title-m fade-in purple-text">${esc(n.hero)} празднует первый день рождения!</div>
     ${phones && play
-    ? card(play, 'Наведи камеру — будешь играть', 'Гости отвечают со своих телефонов')
+    ? card(play, 'Наведи камеру — будешь играть', 'Гости отвечают со своих телефонов', true)
     : (remote ? card(remote, 'Пульт ведущего', '') : '')}
     ${phones && play && remote ? `<div class="hint">Пульт ведущего: ${esc(remote)}</div>` : ''}
     <div class="hint">Начинаем — «дальше» на пульте или пробел на клавиатуре</div>

@@ -43,7 +43,6 @@ export function recap(state) {
   const stars = list.reduce((sum, o) => sum + (Number(o.score) || 0), 0);
   const best = expert(stats);
   const { easiest, hardest } = extremes(stats);
-  const letters = (state.show.capsule && state.show.capsule.letters) || [];
   const honors = state.show.honors || [];
 
   if (!questions.length) {
@@ -61,7 +60,6 @@ export function recap(state) {
       ${card('Номеров сыграно', String(contests.size))}
       ${card('Вопросов задано', String(questions.length))}
       ${card('Звёздочек роздано', `${fmtScore(stars)} ${icon('star-fill')}`)}
-      ${letters.length ? card('Писем в будущее', String(letters.length)) : ''}
       ${honors.length ? card('Наград вручено', String(honors.length)) : ''}
     </div>
 

@@ -61,7 +61,6 @@ const store = {
     if (this.runtime.partyDraw) this.runtime.partyDraw.open = false;
     this.runtime.intermission = null;
     this.runtime.ceremony = null;
-    this.runtime.capsuleStage = null;
     this.runtime.lionAct = null;
     // Таймер после перезапуска не должен внезапно досчитывать старое время.
     this.runtime.timer = null;

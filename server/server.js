@@ -234,7 +234,7 @@ const server = http.createServer(async (req, res) => {
 
   if (pathname === '/api/media') { sendJson(res, 200, { files: listMedia() }); return; }
 
-  // Семейный альбом: письма, фотографии гостей и итоги вечера одной страницей.
+  // Семейный альбом: фотографии гостей, номинации и итоги вечера одной страницей.
   // Открывается с любого телефона в доме — QR на телевизоре ведёт сюда же.
   if (pathname === '/album') {
     send(res, 200, albumHtml(), { 'Content-Type': 'text/html; charset=utf-8' });

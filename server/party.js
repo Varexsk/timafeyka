@@ -25,7 +25,7 @@ module.exports = {
     if (d.playing) r.music = { on: false, seq: (r.music?.seq || 0) + 1 };
     return ['runtime'];
   },
-  partyDraw({ ids, count, reset, close, excludeUsed }) {
+  partyDraw({ ids, count, reset, close, excludeUsed, linger }) {
     const r = store.runtime;
     const old = r.partyDraw || {};
     if (close) { r.partyDraw = { ...old, open: false }; return ['runtime']; }
@@ -42,10 +42,12 @@ module.exports = {
     const startedAt = Date.now();
     r.partyDraw = { open: true, candidates, picks: picks.map(g => ({ id: g.id, name: g.name })),
       used: [...new Set([...used, ...picks.map(g => g.id)])], startedAt, endsAt: startedAt + n * 4500,
+      // Колесо само уходит с экрана через linger после остановки. Без него
+      // висит, пока ведущий не закроет.
+      closeAt: linger > 0 ? startedAt + n * 4500 + Math.min(15000, Number(linger)) : 0,
       seq: (old.seq || 0) + 1 };
     if (r.album) r.album.open = false;
     if (r.ceremony) r.ceremony.open = false;
-    if (r.capsuleStage) r.capsuleStage.open = false;
     return ['runtime'];
   },
   album(p) {
@@ -65,7 +67,6 @@ module.exports = {
     a.startedAt = Date.now(); a.seq++; r.album = a;
     if (a.open && r.partyDraw) r.partyDraw.open = false;
     if (a.open && r.ceremony) r.ceremony.open = false;
-    if (a.open && r.capsuleStage) r.capsuleStage.open = false;
     return ['runtime'];
   },
   partySilence() {

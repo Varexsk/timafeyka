@@ -478,6 +478,16 @@ function refreshItemHead(i) {
   badge.classList.toggle('is-ok', list.length === 0);
 }
 
+// Ролик с iPhone в HEVC браузер открывает, но картинку не декодирует: ширина
+// кадра остаётся нулевой. Предупреждаем прямо под плеером — на празднике
+// будет поздно.
+$('editor').addEventListener('loadedmetadata', (e) => {
+  const v = e.target;
+  if (!v.classList || !v.classList.contains('vid-preview')) return;
+  const warn = v.parentElement && v.parentElement.querySelector('.vid-nopic');
+  if (warn) warn.hidden = v.videoWidth > 0;
+}, true);
+
 $('editor').addEventListener('input', (e) => {
   const t = e.target;
   if (!draft) return;

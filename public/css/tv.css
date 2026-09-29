@@ -1,0 +1,185 @@
+/* Режим дивана: телевизор смотрят из-за стола, за три-четыре метра.
+
+   Подключается последним и только на экране телевизора. Раньше 1rem был
+   около полутора процентов высоты экрана — с ноутбука в самый раз, а с дивана
+   подписи, табло и облако Лёвы превращались в мелкий шрифт. Здесь две вещи:
+   весь экран крупнее на пятую часть, а декорации (купол, кулисы, пол манежа)
+   в пикселях остаются прежними — то место, что прибавилось, уходит контенту.
+   Всё по-прежнему в rem, поэтому 4K-телевизор и ноутбук видят одну картинку. */
+
+/* 1920×1080 → ~20px, 3840×2160 → ~40px */
+html { font-size: clamp(12px, calc(0.66vw + 0.66vh), 56px); }
+
+/* ——— геометрия сцены ———
+   Числа подобраны так, чтобы купол и манеж в пикселях остались почти
+   прежними, а колонка контента стала выше и шире. */
+.tv .stage {
+  --tent-h: 5.8rem;
+  --ring-h: 8.2rem;
+  --curb-h: 1.7rem;
+  --wing-w: 5.5%;
+  --roster-w: 21rem;
+  --scene-top: calc(var(--tent-h) + 2.6rem);
+}
+.tv .garland { top: calc(var(--tent-h) - 1.3rem); height: 6rem; }
+.tv .screen { top: var(--scene-top); bottom: calc(var(--ring-h) + 0.4rem); gap: 1.1rem; }
+.tv .has-roster .screen { right: calc(var(--wing-w) + var(--roster-w) + 1.6rem); }
+.tv .screen > * { max-width: min(100%, 72rem); }
+.tv .screen--wide > * { max-width: 100%; }
+.tv .screen--floor { bottom: calc(var(--ring-h) + 0.4rem); }
+
+/* ——— табло ———
+   Только то, что видно с дивана: кто и сколько. Шляпа с девизом и мелкая
+   строка над заголовком уходят — табло становится короче, а имена крупнее. */
+.tv .scorebar { top: var(--scene-top); bottom: auto; max-height: calc(100% - var(--scene-top) - var(--ring-h) + 1.4rem); padding: 1rem; gap: .7rem; }
+.tv .roster-foot, .tv .roster-kicker { display: none; }
+.tv .roster-heading { padding: 0 .2rem .7rem; }
+.tv .roster-heading h2 { font-size: 2.1rem; }
+.tv .roster-heading .roster-total { font-size: 1.9rem; }
+.tv .roster-total small { font-size: .85rem; }
+.tv .roster-list { gap: .6rem; }
+.tv .scorebar .chip { min-height: 4.2rem; padding: .4rem .7rem .4rem .45rem; gap: .6rem; }
+.tv .scorebar .chip .av { width: 3.1rem; height: 3.1rem; }
+.tv .chip-name { font-size: 1.28rem; line-height: 1.12; overflow-wrap: break-word; }
+.tv .chip-name small { font-size: .95rem; }
+.tv .scorebar .chip .pts { font-size: 1.7rem; min-width: 2.4rem; }
+.tv .chip .pts .ic { width: 1rem; height: 1rem; }
+.tv .scorebar .roster-pager { font-size: 1.05rem; }
+
+/* ——— Лёва ———
+   На заставке и между номерами он главный, а во время вопроса стоит в углу
+   поменьше, чтобы не спорить с карточками. Облако лежит на полу манежа справа
+   от него — широкое и низкое, в две строки: так оно не заходит на контент ни
+   на одном экране, а реплики крупные, их читают вслух за столом. */
+.tv:not(.director-hero) .lion-wrap { left: 1%; bottom: 1.2rem; width: 13rem; }
+.tv .lion { width: 12.5rem; margin-left: 1rem; }
+.tv .lion-wrap .thought { left: 12.5rem; bottom: .1rem; width: 27rem; min-height: 6rem; }
+.tv .thought .body { min-height: 6rem; padding: .9rem 1.8rem; }
+.tv .thought .text { font-size: 1.35rem; line-height: 1.2; }
+.tv .stage[data-screen="show"]:not([data-phase="intro"]) .lion { width: 10.5rem; margin-left: .5rem; }
+.tv .stage[data-screen="show"]:not([data-phase="intro"]) .lion-wrap .thought { left: 10.5rem; }
+/* Пока идёт вопрос и ответ, реплики вроде «тс-с, не подсказывайте» только
+   отвлекают от карточек, а кто угадал, и так пишет табло раунда. Прячем,
+   кроме реплики, которую ведущий написал сам. */
+.tv .stage[data-screen="show"]:not([data-phase="intro"]) .lion-wrap:not(.has-line) .thought { display: none; }
+/* Колонка вопроса начинается правее Лёвы — иначе он стоит поверх угла фото. */
+.tv .stage[data-screen="show"]:not([data-phase="intro"]) .screen { left: calc(var(--wing-w) + 6.5rem); }
+
+/* ——— табло раунда и таймер ——— */
+.tv .round-bar { right: calc(var(--wing-w) + 10rem); bottom: 1.6rem; max-width: 44%; max-height: 7rem; padding: .55rem 1.2rem; gap: .6rem; }
+.tv .round-bar .rb-label { font-size: 1.4rem; }
+.tv .round-bar .rb-place { width: 2.1rem; height: 2.1rem; font-size: 1.2rem; }
+.tv .round-bar .rb-dot { width: 2.6rem; height: 2.6rem; }
+.tv .timer-ring { width: 8.6rem; height: 8.6rem; right: calc(var(--wing-w) + .6rem); bottom: 1.2rem; }
+.tv .timer-ring .t-num { font-size: 3rem; }
+.tv .timer-ring .t-label { font-size: 1rem; }
+
+/* ——— заставка ———
+   QR наводят с другого конца комнаты: чем крупнее код, тем дальше ловит камера.
+   Колонкой заставка не помещалась по высоте, поэтому медальон и карточка
+   с QR встают рядом, а заголовки и подсказки — на всю ширину. */
+.tv .stage[data-screen="welcome"] .screen { display: grid; grid-template-columns: auto auto; justify-content: center; align-content: center; justify-items: center; align-items: center; column-gap: 3.5rem; row-gap: .8rem; }
+.tv .stage[data-screen="welcome"] .screen > * { grid-column: 1 / -1; max-width: 100%; }
+.tv .stage[data-screen="welcome"] .screen > .eyebrow { order: 1; }
+.tv .stage[data-screen="welcome"] .screen > .title-xl { order: 2; }
+.tv .stage[data-screen="welcome"] .screen > .title-m { order: 3; font-size: 2.6rem; }
+.tv .stage[data-screen="welcome"] .welcome-center { order: 4; grid-column: 1; grid-row: span 3; width: auto; gap: 1.5rem; margin: .6rem 0; }
+.tv .stage[data-screen="welcome"] .connect-card { order: 4; grid-column: 2; justify-self: start; }
+/* Строки для ведущего — под карточкой, подальше от облака Лёвы. */
+.tv .stage[data-screen="welcome"] .screen > .hint { order: 5; grid-column: 2; justify-self: start; margin: 0 0 0 1.4rem; text-align: left; font-size: 1.15rem; }
+.tv .stage[data-screen="welcome"] .circus-illustration { width: 9rem; height: 8rem; }
+.tv .connect-card { padding: 1rem 1.4rem; gap: 1.4rem; }
+.tv .connect-card .qr { width: 12rem; height: 12rem; }
+.tv .connect-card .label { font-size: 1.05rem; }
+/* Гостевой QR: его ловят камерой с дивана, поэтому он в полтора раза крупнее,
+   а подпись встаёт под код — так карточка не расползается вширь. */
+.tv .connect-card--play { flex-direction: column; text-align: center; gap: .7rem; padding: 1rem 1.2rem .9rem; }
+.tv .connect-card--play .qr { width: min(25rem, 50vh); height: min(25rem, 50vh); }
+/* С гостевым QR заставка делится на две колонки: слева заголовки и медальон,
+   справа код на всю высоту сцены — он не налезает на подписи. */
+.tv .stage[data-screen="welcome"] .screen:has(.connect-card--play) { grid-template-columns: auto auto; column-gap: 4rem; row-gap: .5rem; padding-left: 5rem; }
+.tv .stage[data-screen="welcome"] .screen:has(.connect-card--play) > * { grid-column: 1; }
+.tv .stage[data-screen="welcome"] .screen:has(.connect-card--play) > .title-m { font-size: 2.1rem; }
+.tv .stage[data-screen="welcome"] .screen:has(.connect-card--play) .welcome-center { grid-row: auto; margin: .2rem 0; }
+.tv .stage[data-screen="welcome"] .screen:has(.connect-card--play) > .hint { grid-column: 1; justify-self: center; text-align: center; margin: 0; }
+.tv .stage[data-screen="welcome"] .screen > .connect-card--play { grid-column: 2; grid-row: 1 / span 6; justify-self: center; align-self: center; }
+.tv .connect-card--play .label { font-size: 1.2rem; }
+.tv .connect-card--play .url { font-size: 1.2rem; }
+
+/* Квадратные экраны: те же поправки, что и в layout.css, только с нашими
+   числами — без этого правило выше перебивало бы их по специфичности. */
+@media (max-aspect-ratio: 4/3) {
+  .tv .stage { --wing-w: 4%; --roster-w: 19rem; }
+  .tv .chip-name { font-size: 1.1rem; }
+  .tv .scorebar .chip .av { width: 2.6rem; height: 2.6rem; }
+  .tv .scorebar .chip .pts { font-size: 1.45rem; }
+}
+
+/* ——— карточки вопроса ———
+   В паре «фото + варианты» вопрос и ответы были мельче, чем без фото. */
+.tv .split .split-side .question { font-size: 2.7rem; }
+.tv .split .split-side .question--sm { font-size: 2.15rem; }
+.tv .split-side .option { font-size: 2rem; }
+.tv .has-roster .question { font-size: 3.4rem; }
+.tv .has-roster .question--sm { font-size: 2.7rem; }
+.tv .has-roster .option { font-size: 2rem; }
+
+/* ——— знакомство с семьями ———
+   Две или четыре семьи раскладываем квадратом, а не «три и одна внизу»,
+   и составы семей пишем крупно: это единственный текст на экране. */
+.tv .stage[data-screen="guests"] .family-grid:has(> :nth-child(2):last-child),
+.tv .stage[data-screen="guests"] .family-grid:has(> :nth-child(4):last-child) { grid-template-columns: repeat(2, minmax(0, 1fr)); width: min(100%, 60rem); }
+.tv .stage[data-screen="guests"] .family-grid { gap: 1.2rem; }
+.tv .stage[data-screen="guests"] .family-card { padding: 1rem 1.2rem; }
+.tv .stage[data-screen="guests"] .family-card .avatar { width: 4.4rem; height: 4.4rem; }
+.tv .family-card .fname { font-size: 1.6rem; }
+.tv .family-card .members { font-size: 1.25rem; }
+.tv .family-card .fans { font-size: 1.05rem; }
+.tv .guest-card .name { font-size: 1.4rem; }
+
+/* ——— таблица лидеров ———
+   Пока строк немного (до шести — одна страница табло), они выше и крупнее. */
+.tv .stage[data-screen="leaderboard"] .board { max-width: 68rem; gap: .9rem; }
+.tv .stage[data-screen="leaderboard"] .board-row { padding: .7rem 1.2rem; }
+.tv .stage[data-screen="leaderboard"] .board-row .avatar { width: 3.8rem; height: 3.8rem; }
+.tv .stage[data-screen="leaderboard"] .board-row .rank { font-size: 2.3rem; }
+.tv .stage[data-screen="leaderboard"] .board-row .name { font-size: 2.1rem; }
+.tv .stage[data-screen="leaderboard"] .board-row .pts { font-size: 2.5rem; width: 4.4rem; }
+.tv .stage[data-screen="leaderboard"] .board-row .bar { height: 1.2rem; }
+
+/* ——— финал ———
+   Подиум стоит на полу манежа, поэтому колонка растёт вверх; с крупным
+   шрифтом надпись над именем победителя уезжала под гирлянду. */
+.tv .stage[data-screen="finale"] .screen { gap: .5rem; }
+.tv .stage[data-screen="finale"] .title-l { font-size: 4.4rem; }
+.tv .stage[data-screen="finale"] .title-m { font-size: 2.5rem; }
+
+/* ——— ставки ——— */
+.tv .bet-card .bet-name { font-size: 1.35rem; }
+.tv .bet-card .bet-value { font-size: 3rem; }
+.tv .bet-card .bet-diff { font-size: 1.15rem; }
+
+/* ——— «Кто это сказал» ———
+   Цитата — единственное, что на экране: её можно дать почти заголовком. */
+.tv .quote { max-width: 56rem; padding: 2rem 3.4rem; }
+.tv .quote-text { font-size: 3.2rem; }
+.tv .quote-mark { font-size: 5rem; }
+.tv .quote-ask { font-size: 1.7rem; }
+
+/* ——— задание Лёвы ——— */
+.tv .ticket-text { font-size: 3rem; }
+.tv .ticket-label { font-size: 1.2rem; }
+
+/* ——— «Год за минуту» ———
+   Фото во весь экран в той же цирковой рамке, что и альбом с пульта: сцена
+   растягивается от края до края и встаёт поверх купола, табло и Лёвы.
+   Пока кулисы съезжаются между номерами, кадр уходит под них — иначе смена
+   номера пряталась бы за фотографией. */
+.tv .stage[data-screen="show"][data-phase] .screen:has(> .slide-full) { inset: 0; z-index: 14; }
+.tv .stage.is-curtain[data-screen="show"][data-phase] .screen:has(> .slide-full) { z-index: 4; }
+.tv .screen > .slide-full { position: absolute; inset: 0; max-width: none; }
+
+/* ——— антракт ——— */
+.tv .director-intermission > p { font-size: 1.5rem; }
+.tv .director-intermission .director-footnote { font-size: 1.1rem; }
+.tv .break-photo { max-width: 80vw; max-height: 54vh; }

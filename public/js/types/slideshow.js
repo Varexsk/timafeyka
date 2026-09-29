@@ -1,4 +1,4 @@
-import { esc, mediaHtml } from '../util.js';
+import { esc, mediaHtml, circusFrameHtml } from '../util.js';
 
 // «Год за минуту» — не конкурс, а тёплый номер: фотографии по месяцам,
 // пока накрывают на стол. Баллов тут нет и не надо.
@@ -40,7 +40,23 @@ export default {
     return { id: '', media: '', q: '' };
   },
 
+  // Фото во весь экран в цирковой рамке — как альбом с пульта. Табло,
+  // Лёва и счётчик кадров его не закрывают (см. tv.css): баллов тут нет,
+  // а с дивана нужна только фотография и подпись.
   stage(ctx) {
+    const item = ctx.item;
+    if (item.media) {
+      const drift = Number(ctx.contest.slideSeconds) || 12;
+      return `
+      <div class="slide-full">
+        <div class="album-stage"><div class="album-layer" style="--photo-time:${drift}s">
+          <img class="album-fill" src="${esc(item.media)}" alt="">
+          <img class="album-photo" src="${esc(item.media)}" alt="${esc(item.q || 'Фотография')}">
+        </div></div>
+        ${circusFrameHtml()}
+        ${item.q ? `<div class="album-caption">${esc(item.q)}</div>` : ''}
+      </div>`;
+    }
     return `
       <div class="slide fade-in">
         ${mediaHtml(ctx.item.media, 'Фотография ещё не выбрана — добавь её в кабинете')}

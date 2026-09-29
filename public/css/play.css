@@ -66,6 +66,21 @@ body.play::before {
   padding-left: 0.4rem;
 }
 
+/* «Сменить»: промахнулись карточкой семьи — выбрать заново, не перезагружая. */
+.p-switch {
+  flex: 0 0 auto;
+  padding: .35rem .6rem;
+  border: .12rem solid var(--ink-soft, #7a6a55);
+  border-radius: .6rem;
+  background: none;
+  color: var(--ink-soft, #7a6a55);
+  font: inherit;
+  font-size: .78rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+.p-switch[hidden] { display: none; }
+
 /* ——— таймер ——— */
 
 .p-timer:empty { display: none; }

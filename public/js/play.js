@@ -305,8 +305,8 @@ function renderChoice(ctx) {
   `;
 }
 
-// Расклад голосов у той семьи, которая потратила «помощь зала». На телевизоре
-// он мелькает крупно и уходит, а здесь остаётся: решать-то им.
+// Расклад голосов у той семьи, которая потратила «помощь зала». Сервер
+// присылает его только ей: телевизор лишь объявляет, что джокер взят.
 function audienceHtml(ctx, opts) {
   const tally = ctx.round && ctx.round.audience;
   if (!tally || ctx.runtime.phase === 'reveal') return '';
@@ -336,7 +336,7 @@ function jokersHtml(ctx, revealed) {
       <b>50 на 50</b><small>${used.fifty ? 'потрачен' : options < 4 ? 'нужно 4 варианта' : 'убрать два неверных'}</small>
     </button>
     <button class="p-joker" data-joker="audience" ${used.audience ? 'disabled' : ''}>
-      <b>Помощь зала</b><small>${used.audience ? 'потрачен' : audience ? 'уже на экране' : 'как ответили другие'}</small>
+      <b>Помощь зала</b><small>${audience ? 'смотрите ниже' : used.audience ? 'потрачен' : 'как ответили другие'}</small>
     </button>
   </div>`;
 }
@@ -428,6 +428,58 @@ function renderNumber(ctx) {
   `;
 }
 
+// Аукцион: ставка одна на семью, в зачёт идёт последняя с любого телефона.
+// Поэтому здесь важнее всего видеть, что сейчас стоит за семьёй и сколько
+// баллов вообще есть — больше сервер не примет.
+function renderBid(ctx) {
+  const round = ctx.round || {};
+  const revealed = ctx.runtime.phase === 'reveal';
+  const prize = Number(ctx.item.prize) || 0;
+  const family = round.mine;
+  const has = Math.floor(Number((myOwner() || {}).score) || 0);
+  const head = `<div class="p-question">${esc(ctx.item.q || '')}</div>
+    <div class="p-hint">Приз лота — <b>${prize}</b> ${plural(prize, 'балл', 'балла', 'баллов')}</div>`;
+
+  if (revealed) {
+    let win = null;
+    for (const [id, v] of Object.entries(round.votes || {})) {
+      const bid = Number(v.v);
+      if (!(bid > 0)) continue;
+      if (!win || bid > win.bid || (bid === win.bid && (v.at || 0) < win.at)) win = { id, bid, at: v.at || 0 };
+    }
+    const who = win && owners().find((o) => o.id === win.id);
+    const ours = win && win.id === me.ownerId;
+    return `${head}
+      <div class="p-card">
+        <div class="p-hint">${win ? 'Продано!' : 'Никто не поставил'}</div>
+        <div class="p-title">${win ? `${esc(who ? who.name : '—')} — за ${win.bid}` : 'Лот остаётся у цирка'}</div>
+        ${family !== undefined ? `<div class="p-hint" style="margin-top:.4rem">Ставка вашей семьи: ${esc(family)}</div>` : ''}
+      </div>
+      ${win ? `<div class="p-hint">${ours
+    ? `Лот ваш! Семья платит ${win.bid} и получает ${prize}: ${prize - win.bid >= 0 ? '+' : ''}${prize - win.bid}.`
+    : 'Проигравшие ставки ничего не стоят — баллы остались при вас.'}</div>` : ''}`;
+  }
+
+  return `${head}
+    <div class="p-number">
+      <input type="number" inputmode="numeric" id="numIn" min="0" max="${has}" step="1"
+             value="" placeholder="${has ? `до ${has}` : 'нет баллов'}">
+      <button class="p-big" data-send="number" style="flex:0 0 auto;width:8rem">Ставлю!</button>
+    </div>
+    <div class="p-hint">${family !== undefined
+    ? `Ставка семьи сейчас: <b>${esc(family)}</b>. Можно изменить — в зачёт идёт последняя ставка с любого телефона семьи.`
+    : `Ставка одна на всю семью. У вас ${has} ${plural(has, 'балл', 'балла', 'баллов')} — больше поставить нельзя.`}</div>
+    ${familyLine(round, (v) => String(v))}
+    <div class="p-hint">Выигрывает самая большая ставка: семья платит её и получает приз. Остальные ничего не теряют.</div>`;
+}
+
+function plural(n, one, few, many) {
+  const d = n % 10, h = n % 100;
+  if (d === 1 && h !== 11) return one;
+  if (d >= 2 && d <= 4 && (h < 12 || h > 14)) return few;
+  return many;
+}
+
 function answeredHint(round, sent) {
   const total = owners().length;
   const done = round.answered || 0;
@@ -487,7 +539,10 @@ function renderPlay() {
     return renderWaiting('Смотри на большой экран',
       'В этом номере с телефона отвечать не нужно.');
   }
-  if (vote.kind === 'number') return renderNumber(ctx);
+  if (vote.kind === 'number') {
+    const rule = ctx.type && ctx.type.scoring && ctx.type.scoring.rule;
+    return rule === 'highestBid' ? renderBid(ctx) : renderNumber(ctx);
+  }
   if (vote.kind === 'text') return renderText(ctx);
   if (vote.kind === 'choice') return renderChoice(ctx);
   if (vote.kind === 'guest') return renderGuest(ctx);
@@ -508,10 +563,14 @@ function renderTimer() {
 
 function render() {
   if (!state) return;
-  $('capsuleLink').hidden = !state.show.capsule?.open;
-  $('capsuleLink').style.display = state.show.capsule?.open ? 'block' : 'none';
-  if (state.runtime.intermission?.open) { renderWaiting('Антракт', 'Отдыхаем — ведущий скоро продолжит праздник.'); renderTimer(); return; }
   const owner = myOwner();
+  $('switchBtn').hidden = !owner;
+  if (state.runtime.intermission?.open) {
+    $('playBody').innerHTML = renderWaiting('Антракт', 'Отдыхаем — ведущий скоро продолжит праздник.');
+    bodyWhere = '';
+    renderTimer();
+    return;
+  }
 
   document.body.classList.toggle('is-rehearsal', !!state.runtime.rehearsal);
 
@@ -615,6 +674,18 @@ function pickPerson(guestId) {
   render();
 }
 
+// Промахнулись карточкой — выбираем заново. Телефон отвязывается от семьи,
+// а его ответ на текущий вопрос снимается: иначе случайный голос так и
+// остался бы за чужой семьёй.
+function switchFamily() {
+  if (me && me.ownerId) bus.send('leave', { playerId: me.playerId, forget: true });
+  remember(null);
+  joined = false;
+  bodyWhere = '';
+  connect();
+  render();
+}
+
 function ensureJoined() {
   if (joined || !me || !myOwner() || needsPerson()) return;
   joined = true;
@@ -624,8 +695,8 @@ function ensureJoined() {
 // Ответ уходит вместе с playerId: сервер складывает ответы семьи по людям,
 // а не затирает предыдущий. Бабушка, ответившая первой, больше не пропадает.
 function sendVote(value) {
-  if (!me) return;
-  bus.send('vote', { ownerId: me.ownerId, playerId: me.playerId, value });
+  if (!me) return Promise.resolve(null);
+  return bus.send('vote', { ownerId: me.ownerId, playerId: me.playerId, value });
 }
 
 // ——— события ———
@@ -637,7 +708,13 @@ document.body.addEventListener('click', (e) => {
   const person = e.target.closest('[data-person]');
   if (person) { buzz(); pickPerson(person.dataset.person); return; }
 
-  if (e.target.closest('[data-back]')) { buzz(); remember(null); joined = false; render(); return; }
+  if (e.target.closest('[data-back]')) { buzz(); switchFamily(); return; }
+  if (e.target.closest('#switchBtn')) {
+    buzz();
+    const owner = myOwner();
+    if (confirm(`Сменить ${owner ? `«${owner.name}»` : 'семью'}? Ответ на текущий вопрос с этого телефона снимется.`)) switchFamily();
+    return;
+  }
 
   const choice = e.target.closest('[data-choice]');
   if (choice) {
@@ -669,8 +746,9 @@ document.body.addEventListener('click', (e) => {
     const input = $('numIn');
     if (!input || input.value === '') { toast('Впиши число'); return; }
     buzz(18);
-    sendVote(input.value);
-    toast('Ставка принята!');
+    // Сервер может не принять ставку (в аукционе — больше, чем баллов у семьи):
+    // тогда говорим почему, а не «принято».
+    sendVote(input.value).then((r) => toast(r && r.ok === false ? (r.error || 'Не получилось') : 'Ставка принята!'));
     return;
   }
 

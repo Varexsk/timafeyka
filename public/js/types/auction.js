@@ -4,20 +4,35 @@ import { icon } from '../icons.js';
 // Аукцион на баллы. Семьи ставят вслепую, победитель платит свою ставку
 // и забирает приз.
 //
+// За семью обычно играют несколько человек с разных телефонов. Ставка у
+// семьи одна, как табличка у участника настоящего аукциона: поднять её может
+// любой из семьи, в зачёт идёт последняя, и все телефоны семьи её видят.
+// Усреднять, как в «Ставках», здесь нельзя: 3 и 7 — это не «ставка 5».
+// Больше, чем баллов у семьи, поставить нельзя — это проверяет сервер.
+//
 // Хорошо ставить ближе к концу: у отстающих появляется способ рискнуть,
 // а у лидеров — повод занервничать.
+
+export const RULES = 'Одна ставка на семью, вслепую. Ставить можно с любого телефона семьи — '
+  + 'в зачёт идёт последняя. Больше, чем баллов у семьи, поставить нельзя. '
+  + 'Самая большая ставка выигрывает лот: семья платит ставку и получает приз лота, '
+  + 'остальные ничего не теряют. Ставки равны — выигрывает тот, кто поставил раньше.';
 
 function bids(ctx) {
   return ctx.owners.map((o) => ({ owner: o, bid: ctx.voteOf(o.id), placed: ctx.hasVote(o.id) }));
 }
 
+// Так же, как считает сервер: самая большая ставка, при равенстве — кто раньше.
 function winner(ctx) {
+  const votes = (ctx.round && ctx.round.votes) || {};
   let best = 0;
+  let at = Infinity;
   let out = null;
   for (const b of bids(ctx)) {
     const value = Number(b.bid);
     if (!isFinite(value) || value <= 0) continue;
-    if (value > best) { best = value; out = b; }
+    const when = (votes[b.owner.id] && votes[b.owner.id].at) || 0;
+    if (value > best || (value === best && when < at)) { best = value; at = when; out = b; }
   }
   return out;
 }
@@ -46,14 +61,14 @@ export default {
   // Победитель платит ставку и забирает приз — считает это сервер.
   scoring: { rule: 'highestBid', prizeField: 'prize' },
   participation: {
-    vote: { kind: 'number', label: 'Впиши ставки семей:' }
+    vote: { kind: 'number', label: 'Впиши ставки семей:', family: 'last', placeholder: 'баллов' }
   },
 
   newContest() {
     return {
       title: 'Аукцион',
       subtitle: 'Кто рискнёт',
-      rules: 'Ставьте баллы вслепую. Победитель платит свою ставку — и забирает приз.'
+      rules: RULES
     };
   },
 
@@ -108,7 +123,8 @@ export default {
         <span class="r-answer-text">${prize} ${prize === 1 ? 'балл' : 'баллов'}</span>
       </div>
       ${win ? `<div class="r-note">Сейчас впереди: <b>${esc(win.owner.name)}</b> со ставкой ${fmtNum(win.bid)}</div>` : ''}
-      <div class="r-note">Ставку нельзя поставить больше, чем есть баллов — следи за этим сам.</div>
+      <div class="r-note">Ставка одна на семью: с нескольких телефонов в зачёт идёт последняя.
+        Больше, чем баллов у семьи, сервер не примет — следить за этим не нужно.</div>
       ${ctx.item.answerNote ? `<div class="r-note">${esc(ctx.item.answerNote)}</div>` : ''}
     `;
   }

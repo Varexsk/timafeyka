@@ -9,8 +9,6 @@
 .director-plan-row { border: 1px solid #decbb0; border-radius: .8rem; padding: .8rem; margin: .7rem 0; background: #fffaf1; }
 .director-plan-row > strong { display: block; }
 .director-pill { display: inline-block; background: #684568; color: white; border-radius: 1rem; padding: .15rem .6rem; font-size: .75rem; }
-.director-letters { max-height: 20rem; overflow: auto; }
-.director-letters p { white-space: pre-wrap; overflow-wrap: anywhere; }
 .director-console.is-intermission { box-shadow: 0 0 0 3px #b796c5; }
 .director-intermission { display: flex; flex-direction: column; align-items: center; justify-content: center; }
 .director-intermission h1 { font-size: clamp(3rem,7vw,7rem); margin: 0; }
@@ -26,9 +24,9 @@
 .ceremony-card h1 { font-size: clamp(1.8rem,2.8vw,3rem); }
 .ceremony-seal { margin: 1rem auto; border: .15rem solid #aa7c33; border-radius: 50%; width: 4rem; height: 4rem; display: grid; place-items: center; font-size: 2rem; color: #a77732; }
 @keyframes honor-arrive { from { transform: translateY(4rem) rotate(-4deg); opacity: 0; } to { transform: none; opacity: 1; } }
-.director-capsule { display: flex; flex-direction: column; justify-content: center; align-items: center; }
-.capsule-qr { background: #fffaf0; padding: 1rem; border-radius: 1rem; width: min(32vh,19rem); margin: 1rem; }
-.capsule-qr svg { display: block; width: 100%; height: auto; }
+.director-qrstage { display: flex; flex-direction: column; justify-content: center; align-items: center; }
+.stage-qr { background: #fffaf0; padding: 1rem; border-radius: 1rem; width: min(32vh,19rem); margin: 1rem; }
+.stage-qr svg { display: block; width: 100%; height: auto; }
 .director-hero .lion-wrap { z-index: 35; left: 6vw; bottom: 12vh; width: 24vw; opacity: 1 !important; }
 .director-hero .lion-wrap .lion { width: 100%; margin-left: 0; }
 .director-hero .lion-wrap .thought { display: none; }
@@ -62,15 +60,5 @@
 @keyframes leva-startle { 0%,100% { transform: none; } 20%,60% { transform: rotate(-75deg); } }
 @keyframes leva-offer { 0%,100% { transform: none; } 25%,75% { transform: rotate(35deg) translate(-5px,-5px); } }
 @keyframes leva-ticket { 0% { opacity: 0; transform: scale(.2); } 25%,70% { opacity: 1; transform: translate(-5px,-5px) rotate(25deg); } 100% { opacity: 0; transform: translate(90px,-35px) rotate(0); } }
-.capsule-page { background: radial-gradient(ellipse at top,#eadac5,#faf4e8 65%); min-height: 100vh; padding: 2rem 1rem; color: #412b41; }
-.capsule-page main { max-width: 36rem; margin: auto; background: #fffaf1; padding: 2rem; border: 1px solid #d8b878; border-radius: 1.5rem; box-shadow: 0 1rem 3rem #4f2f3212; }
-.capsule-page h1 { font-family: Georgia,serif; font-size: clamp(2rem,6vw,3rem); line-height: 1.15; }
-.capsule-kicker { font-size: .7rem; letter-spacing: .2em; color: #977343; }
-.capsule-page label { display: block; margin: 1.3rem 0; font-weight: 700; }
-.capsule-page input,.capsule-page textarea { display: block; box-sizing: border-box; width: 100%; border: 1px solid #cbb89b; background: #fff; border-radius: .7rem; padding: .8rem; font: inherit; margin-top: .5rem; color: inherit; }
-.capsule-page button { border: 0; background: #694667; color: #fff6e7; padding: 1rem; width: 100%; border-radius: .7rem; font: inherit; font-weight: 800; cursor: pointer; }
-.capsule-page button:disabled { opacity: .5; cursor: default; }
-.capsule-page [hidden] { display: none !important; }
-.capsule-note { font-size: .8rem; color: #87715d; line-height: 1.5; }
 @media(prefers-reduced-motion:reduce) { body:not(.theater-full) .lion-wrap[data-act],body:not(.theater-full) .lion-wrap[data-act] .lion,body:not(.theater-full) .lion-wrap[data-act] .lion *,body:not(.theater-full) .ceremony-card { animation: none !important; } }
-@media(max-width:480px) { .director-console .party-row { gap: .3rem; } .director-console .btn { min-width: 0; white-space: normal; } .capsule-page main { padding: 1.2rem; } }
+@media(max-width:480px) { .director-console .party-row { gap: .3rem; } .director-console .btn { min-width: 0; white-space: normal; } }

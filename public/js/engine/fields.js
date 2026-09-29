@@ -187,6 +187,8 @@ const RENDER = {
     } else if (d.kind === 'video') {
       preview = cur
         ? `<video class="vid-preview" id="${videoPrevId(i)}" src="${esc(cur)}" controls preload="metadata" style="margin-top:.4rem"></video>
+           <div class="vid-nopic" hidden>Браузер не показывает картинку этого ролика: звук будет, а вместо видео — чёрный экран.
+             Скорее всего, он снят на iPhone в HEVC. Запусти <b>npm run video</b> — ролики перекодируются, ссылки поправятся сами.</div>
            <div class="muted" style="margin-top:.3rem">Поставь видео на нужном моменте и жми «с плеера» ${i === undefined ? 'у вопроса' : 'ниже'}.</div>`
         : '<div class="muted" style="margin-top:.3rem">Загрузи видео в разделе «Медиа» внизу страницы — потом выбери его здесь.</div>';
     }

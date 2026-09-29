@@ -197,6 +197,62 @@ test('аукцион: победитель платит ставку и заби
   assert.equal(scoreOf(a.id), 8, 'проигравший не платит ничего');
 });
 
+function onLot(prize) {
+  const lot = {
+    id: 'c-auc3', type: 'auction', enabled: true, subtitle: '', title: 'Аукцион',
+    rules: '', lionLine: '', pointsPerCorrect: 1,
+    items: [{ id: 'lot1', q: 'Право задуть свечку', prize }]
+  };
+  send('saveContest', { contest: lot });
+  send('goto', { contestId: 'c-auc3', itemId: 'lot1', phase: 'question' });
+}
+
+test('аукцион: ставка семьи — последняя с любого телефона, а не среднее', () => {
+  const [a] = reset();
+  onLot(10);
+  send('award', { id: a.id, delta: 9 });
+
+  send('vote', { ownerId: a.id, playerId: 'nina', value: '3' });
+  send('vote', { ownerId: a.id, playerId: 'valya', value: '7' });
+  assert.equal(roundNow().votes[a.id].v, 7, 'валя подняла табличку — в зачёт 7, а не 5');
+
+  send('vote', { ownerId: a.id, playerId: 'nina', value: '4' });
+  assert.equal(roundNow().votes[a.id].v, 4, 'нина передумала последней');
+});
+
+test('аукцион: больше, чем баллов у семьи, поставить нельзя', () => {
+  const [a, b] = reset();
+  onLot(10);
+  send('award', { id: a.id, delta: 5 });
+
+  const over = send('vote', { ownerId: a.id, playerId: 'nina', value: '6' });
+  assert.equal(over.ok, false);
+  assert.match(over.error, /5 баллов/);
+  assert.equal(((roundNow() || {}).votes || {})[a.id], undefined, 'ставка не принята');
+
+  assert.equal(send('vote', { ownerId: a.id, playerId: 'nina', value: '5' }).ok, true);
+  assert.equal(send('vote', { ownerId: b.id, playerId: 'kolya', value: '1' }).ok, false, 'у семьи без баллов ставки нет');
+
+  // Ведущий набирает цифры по одной — его упираем в потолок, а не спорим.
+  send('vote', { ownerId: a.id, value: '12' });
+  assert.equal(roundNow().votes[a.id].v, 5);
+});
+
+test('аукцион: при равных ставках выигрывает поставивший раньше', () => {
+  const [a, b] = reset();
+  onLot(10);
+  send('award', { id: a.id, delta: 6 });
+  send('award', { id: b.id, delta: 6 });
+
+  send('vote', { ownerId: b.id, playerId: 'kolya', value: '4' });
+  roundNow().votes[b.id].at -= 1000;
+  send('vote', { ownerId: a.id, playerId: 'nina', value: '4' });
+  send('reveal', { on: true });
+
+  assert.equal(scoreOf(b.id), 6 - 4 + 10);
+  assert.equal(scoreOf(a.id), 6);
+});
+
 test('аукцион без ставок никому ничего не даёт', () => {
   reset();
   const lot = {

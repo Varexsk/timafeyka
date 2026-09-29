@@ -8,7 +8,7 @@ import * as confetti from './confetti.js';
 import * as music from './music.js';
 import { lionSvg, thoughtHtml, pickLine, lionProp } from './lion.js';
 import { buildCtx } from './engine/ctx.js';
-import { audienceHtml } from './engine/participation.js';
+import { audienceCallHtml } from './engine/participation.js';
 import * as timer from './engine/timer.js';
 import { loadTypes } from './engine/registry.js';
 import * as screens from './screens.js';
@@ -205,7 +205,7 @@ function paint(key, html) {
 function scheduleScene(r, ctx) {
   const key = r.screen === 'show' && ctx.contest ? 'c:' + ctx.contest.id : 's:' + r.screen;
   if (key === sceneKey) {
-    if (r.phase !== 'intro' || r.intermission?.open || r.ceremony?.open || r.capsuleStage?.open || r.partyDraw?.open || r.album?.open) endEntrance();
+    if (r.phase !== 'intro' || r.intermission?.open || r.ceremony?.open || r.partyDraw?.open || r.album?.open) endEntrance();
     if (!curtainTimer) paintScene(r, ctx);
     return;
   }
@@ -234,7 +234,7 @@ function scheduleScene(r, ctx) {
     curtainTimer = 0;
     paintScene(state.runtime, currentCtx());
     const live = state.runtime;
-    const showEntrance = plate && live.screen === 'show' && live.phase === 'intro' && !live.intermission?.open && !live.ceremony?.open && !live.capsuleStage?.open && !live.partyDraw?.open && !live.album?.open;
+    const showEntrance = plate && live.screen === 'show' && live.phase === 'intro' && !live.intermission?.open && !live.ceremony?.open && !live.partyDraw?.open && !live.album?.open;
     if (showEntrance) {
       el.stage.classList.add('theater-introduction');
       sfx.play('drumroll');
@@ -350,6 +350,9 @@ function render() {
 
   // реплика львёнка
   const custom = (r.lionLine || '').trim();
+  // Во время вопроса облако прячется (см. tv.css), но реплику, которую
+  // ведущий написал Лёве сам, показываем всегда.
+  el.lionWrap.classList.toggle('has-line', !!custom);
   if (custom) say(custom);
   else if (r.screen === 'show' && ctx.contest && r.phase === 'intro') say(ctx.contest.lionLine || pickLine('intro', ctx.contestIndex));
   else if (r.screen === 'show' && ctx.contest && ctx.item) {
@@ -557,15 +560,19 @@ function flashQuestion(text) {
 function reactions() {
   const r = state.runtime;
 
-  // «Помощь зала»: показываем расклад крупно и ненадолго — чтобы прочитали
-  // с дивана и вернулись к вариантам.
+  // «Помощь зала»: объявляем крупно и ненадолго, кто взял джокер. Расклад
+  // голосов — только на телефонах этой семьи.
   const roundKey = r.contestId + '/' + r.itemId;
   const round = (r.rounds || {})[roundKey];
-  if (round && round.audience && seen.audience !== roundKey) {
-    seen.audience = roundKey;
-    const html = audienceHtml(currentCtx());
-    if (html) flashPanel(html, 8000, 'audience-flash');
-  }
+  const callers = round && round.audience && typeof round.audience === 'object' ? Object.keys(round.audience) : [];
+  const audienceKey = roundKey + '|' + callers.join(',');
+  if (seen.audience === '') seen.audience = audienceKey;        // запомнили, с чем открылись
+  else if (callers.length && seen.audience !== audienceKey) {
+    const before = seen.audience.startsWith(roundKey + '|') ? seen.audience.slice(roundKey.length + 1).split(',') : [];
+    seen.audience = audienceKey;
+    const html = audienceCallHtml(currentCtx(), callers.filter((id) => !before.includes(id)));
+    if (html) flashPanel(html, 5000, 'audience-flash');
+  } else seen.audience = audienceKey;
 
   const repeatSeq = (r.repeat && r.repeat.seq) || 0;
   if (seen.repeat === null) seen.repeat = repeatSeq;      // запомнили, с чем открылись

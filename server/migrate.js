@@ -53,6 +53,12 @@ function migrateShow(show) {
     changed = true;
   }
 
+  // «Письмо в будущее» убрали из праздника целиком — хвосты в данных не нужны.
+  if (show && show.capsule !== undefined) {
+    delete show.capsule;
+    changed = true;
+  }
+
   for (const contest of (show && show.contests) || []) {
     for (const item of contest.items || []) {
       for (const opt of item.options || []) {
@@ -106,6 +112,10 @@ function migrateRuntime(runtime, show) {
       if (!runtime.roundOrder.includes(key)) runtime.roundOrder.push(key);
     }
     delete runtime.bets;
+    changed = true;
+  }
+  if (runtime.capsuleStage !== undefined) {
+    delete runtime.capsuleStage;
     changed = true;
   }
   if (!runtime.rounds) { runtime.rounds = {}; changed = true; }

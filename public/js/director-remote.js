@@ -1,6 +1,6 @@
 import { send } from './bus.js';
 import { esc } from './util.js';
-let root, state, planKey = '', peopleKey = '', settingsKey = '', lettersKey = '', mediaFiles = [];
+let root, state, planKey = '', peopleKey = '', settingsKey = '', mediaFiles = [];
 const $ = s => root.querySelector(s);
 const nominations = ['Звезда цирка Тимоши', 'Самая артистичная бабушка', 'Главный знаток Тимоши', 'Мастер смешных ответов', 'Самый весёлый артист', 'За самые тёплые объятия'];
 async function command(type, payload) {
@@ -21,12 +21,9 @@ export function mountDirectorRemote() {
     </details>
     <button class="btn btn--ghost btn--wide" data-director="close">Закрыть сценку</button>
     <details><summary>План вечера и запасные конкурсы</summary><p data-plan-summary></p><div data-plan></div></details>
-    <details><summary>Письмо Тимофею в будущее</summary><p>Пожелания и предсказания сохранятся для вашей семьи.</p>
-      <div class="party-row"><button class="btn btn--teal" data-director="capsule">Открыть сбор писем</button><button class="btn" data-director="letters-stage">Показать QR-код</button></div>
-      <p data-letter-count></p><a href="capsule.html" target="_blank">Открыть страницу для гостей</a>
-      <div data-letters class="director-letters"></div>
+    <details><summary>Семейный альбом</summary>
       <div class="party-row"><button class="btn" data-director="export">Открыть альбом</button><button class="btn" data-director="album-stage">QR альбома на ТВ</button></div>
-      <p class="r-note">В альбоме письма, фотографии из фотобудки и итоги вечера. Гости открывают его по QR-коду со своих телефонов.</p>
+      <p class="r-note">В альбоме фотографии из фотобудки, номинации и итоги вечера. Гости открывают его по QR-коду со своих телефонов.</p>
     </details>
     <label>Движение на сцене<select data-setting="motion"><option value="full">Полное шоу — свет, занавес и ходьба Лёвы</option><option value="calm">Спокойный режим</option></select></label>
     <details><summary>Что сделает Лёва</summary><div class="party-row">${[['enter','Выйти'],['bow','Поклониться'],['clap','Похлопать'],['surprise','Удивиться'],['gift','Вручить билет']].map(([k,l]) => `<button class="btn" data-motion="${k}">${l}</button>`).join('')}</div></details>
@@ -64,8 +61,6 @@ export function mountDirectorRemote() {
       if (available.length < (act === 'pair' ? 2 : 1)) { $('[data-director-status]').textContent = 'Недостаточно гостей. Отметь участников или сбрось историю колеса.'; return; }
       command('directorCue', { kind: 'entrance', ids, count: act === 'pair' ? 2 : 1 });
     }
-    if (act === 'capsule') command('capsuleOpen', { open: !state.show.capsule?.open });
-    if (act === 'letters-stage') command('capsuleStage', { open: true });
     if (act === 'export') window.open('/album', '_blank');
     if (act === 'album-stage') command('albumStage', { open: !state.runtime.albumStage?.open });
     if (act === 'media') refreshMedia();
@@ -111,9 +106,5 @@ export function updateDirectorRemote(next) {
     for (const field of ['breakTrack','giftTrack']) { const el = $(`[data-setting="${field}"]`); el.innerHTML = '<option value="">Без трека</option>' + options(mediaFiles); el.value = s.director?.[field] || ''; }
     $('[data-setting="breakAlbum"]').innerHTML = '<option value="">Заставка «Антракт»</option>' + s.contests.filter(c=>c.type==='slideshow').map(c=>`<option value="${esc(c.id)}">${esc(c.title)}</option>`).join(''); $('[data-setting="breakAlbum"]').value = s.director?.breakAlbum || '';
   }
-  $('[data-director="capsule"]').textContent = s.capsule?.open ? 'Закрыть сбор писем' : 'Открыть сбор писем';
-  $('[data-letter-count]').textContent = `Писем сохранено: ${s.capsule?.letters?.length || 0}`;
   $('[data-honors]').textContent = `Наград вручено: ${s.honors?.length || 0}${r.rehearsal ? ' · Репетиция: новые награды не сохраняются' : ''}`;
-  const lk = JSON.stringify(s.capsule?.letters || []);
-  if (lk !== lettersKey) { lettersKey = lk; $('[data-letters]').innerHTML = (s.capsule?.letters || []).map(l=>`<details><summary>${esc(l.name)}</summary><p>${esc(l.wish)}</p><p>${esc(l.prediction)}</p></details>`).join(''); }
 }

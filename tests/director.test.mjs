@@ -31,9 +31,8 @@ test('антракт не запускает заранее приостанов
   send('intermission',{on:true}); send('intermission',{on:false});
   assert.equal(store.runtime.timer.running,false);
 });
-test('антракт возвращает QR-экран и замораживает время фотоальбома',()=>{
-  reset(); send('capsuleStage',{open:true}); send('intermission',{on:true}); send('intermission',{on:false});
-  assert.equal(store.runtime.capsuleStage.open,true);
+test('антракт замораживает время фотоальбома',()=>{
+  reset();
   send('album',{frames:[{src:'media/a.jpg'},{src:'media/b.jpg'}],open:true,playing:true});
   const start = store.runtime.album.startedAt;
   send('intermission',{on:true}); store.runtime.intermission.at -= 10000;
@@ -64,14 +63,16 @@ test('резерв пропускается программой, но запу�
   send('planLaunch',{id:c.id});
   assert.equal(store.runtime.contestId,c.id); assert.equal(c.enabled,true); assert.equal(c.durationMinutes,8);
 });
-test('письма не дублируются при повторной отправке, не раскрываются гостям и переживают перезапуск',()=>{
-  reset(); const letter = {id:'letter-test-1',name:'Бабушка',wish:'Расти счастливым',prediction:'Будешь музыкантом'};
-  assert.equal(send('capsuleLetter',letter).ok,false);
-  send('capsuleOpen',{open:true}); send('capsuleLetter',letter); send('capsuleLetter',letter);
-  assert.equal(store.show.capsule.letters.length,1);
-  assert.deepEqual(playShow(store.show).capsule,{open:true,count:1});
-  assert.equal(JSON.stringify(playShow(store.show)).includes(letter.wish),false);
+test('письма в будущее вырезаны: команд нет, старые данные вычищаются',()=>{
+  reset();
+  assert.equal(send('capsuleOpen',{open:true}).ok,false);
+  assert.equal(send('capsuleLetter',{id:'letter-test-1',name:'Бабушка',wish:'Расти'}).ok,false);
+  store.show.capsule = {open:true,letters:[{id:'x',name:'Бабушка',wish:'Расти'}]};
+  store.runtime.capsuleStage = {open:true};
+  store.flush(); store.load();
+  assert.equal(store.show.capsule,undefined);
+  assert.equal(store.runtime.capsuleStage,undefined);
+  assert.equal('capsule' in playShow(store.show),false);
   send('intermission',{on:true});
   assert.deepEqual(playRuntime(store.runtime,'',store.show).intermission,{open:true});
-  store.flush(); store.load(); assert.equal(store.show.capsule.letters.length,1);
 });

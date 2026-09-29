@@ -83,6 +83,13 @@ function findOwner(id) {
     || null;
 }
 
+function plural(n, one, few, many) {
+  const d = n % 10, h = n % 100;
+  if (d === 1 && h !== 11) return one;
+  if (d >= 2 && d <= 4 && (h < 12 || h > 14)) return few;
+  return many;
+}
+
 function clamp(n, min, max) {
   return Math.max(min, Math.min(max, n));
 }
@@ -159,7 +166,7 @@ function prev() {
 // поверх сцены. Музыка DJ-пульта при этом не трогается.
 function closeOverlays() {
   const r = store.runtime;
-  for (const key of ['album', 'partyDraw', 'ceremony', 'capsuleStage', 'albumStage']) {
+  for (const key of ['album', 'partyDraw', 'ceremony', 'albumStage']) {
     if (r[key] && r[key].open) r[key].open = false;
   }
   if (r.album) r.album.playing = false;
@@ -282,6 +289,11 @@ let voteTick = 0;
 function later(a, b) {
   if ((a.at || 0) !== (b.at || 0)) return (a.at || 0) > (b.at || 0);
   return (a.n || 0) > (b.n || 0);
+}
+
+function familyRule(contest) {
+  const vote = voteDecl(contest);
+  return vote.family || FAMILY_BY_KIND[vote.kind] || 'last';
 }
 
 function familyVote(by, mode) {
@@ -617,6 +629,61 @@ function autoTimer() {
   startTimer(seconds, conf.onEnd, conf.label);
 }
 
+// ——— колесо участника ———
+//
+// Формат может попросить колесо сам (draw в объявлении): открылось задание
+// «Цирковых фантов» — колесо крутится, и на арену выходит гость. Кто выпал,
+// запоминается в кармане вопроса (slice.who), а не выводится из номера
+// жеребьёвки: чужое колесо между делом не отнимет у фанта артиста.
+
+function guestOwnerId(guest) {
+  if (!guest) return '';
+  return store.show.mode === 'guests' ? guest.id : guest.teamId || '';
+}
+
+// Крутим среди играющих, кроме отказавшихся. Уже выступавших пропускаем,
+// пока есть кто-то новый; вышли все — начинаем круг заново.
+function drawFor(contest, round, skip) {
+  const r = store.runtime;
+  const decl = types.get(contest.type) || {};
+  const pool = store.guests.list.filter((g) => g.playing !== false && !skip.includes(g.id));
+  if (!pool.length) return false;
+  const used = (r.partyDraw && r.partyDraw.used) || [];
+  const fresh = pool.some((g) => !used.includes(g.id));
+  if (r.partyDraw) r.partyDraw.open = false;
+  party.partyDraw({
+    ids: pool.map((g) => g.id), count: 1, excludeUsed: fresh,
+    linger: (decl.draw && decl.draw.linger) || 2500
+  });
+  const pick = r.partyDraw && r.partyDraw.open && r.partyDraw.picks[0];
+  if (!pick) return false;
+  round.slice = Object.assign(round.slice || {}, {
+    who: pick.id, drawSeq: r.partyDraw.seq, result: '', awardSeq: 0
+  });
+  return true;
+}
+
+function autoDraw() {
+  const r = store.runtime;
+  if (r.screen !== 'show' || r.phase !== 'question') return;
+  const contest = currentContest();
+  const item = currentItem();
+  const decl = contest && types.get(contest.type);
+  if (!item || !decl || !decl.draw) return;
+  const round = roundAt(roundKey(contest, item), true);
+  if (round.slice && round.slice.who) return;
+  drawFor(contest, round, (round.slice && round.slice.refused) || []);
+}
+
+// Снять начисление, которое сделал судья этого вопроса, — если его ещё не
+// отменили кнопкой «Отменить».
+function unjudge(slice) {
+  if (!slice.awardSeq) return [];
+  const entry = (store.runtime.awardLog || []).find((e) => e.seq === slice.awardSeq && !e.undone);
+  slice.awardSeq = 0;
+  return entry ? revertAward(entry) : [];
+}
+
 // ——— баллы ———
 
 // Единственное место, где меняется счёт. Пишем в журнал ровно те дельты,
@@ -720,7 +787,7 @@ const handlers = {
     store.runtime.rosterPage = (current + (Number(delta) < 0 ? -1 : 1) + pages) % pages;
     return ['runtime'];
   },
-  next() { closeOverlays(); next(); autoTimer(); return ['runtime'].concat(settleRound(), themeMusic()); },
+  next() { closeOverlays(); next(); autoTimer(); autoDraw(); return ['runtime'].concat(settleRound(), themeMusic()); },
   prev() { closeOverlays(); prev(); autoTimer(); return ['runtime'].concat(themeMusic()); },
 
   goScreen({ screen }) {
@@ -749,6 +816,7 @@ const handlers = {
     const want = ['intro', 'question', 'reveal'].includes(phase) ? phase : 'question';
     setPos(contest, at, items.length ? want : 'intro');
     autoTimer();
+    autoDraw();
     return ['runtime'].concat(settleRound(), themeMusic());
   },
 
@@ -893,9 +961,25 @@ const handlers = {
     if (!contest || !item || !ownerId) return [];
     // Выбор уже виден на ролике — с телефонов ответы больше не принимаем.
     if (playerId && rollingNow()) return { ok: false, error: 'Видео уже идёт — ответы закрыты' };
-    const round = roundAt(roundKey(contest, item), true);
     const player = String(playerId || '').slice(0, 40);
     const empty = value === '' || value === null || value === undefined;
+
+    // Аукцион: ставка — целое число баллов, и не больше, чем у семьи есть.
+    // Телефону объясняем отказ; ведущему, который набирает цифры по одной,
+    // просто упираем в потолок.
+    const decl = types.get(contest.type);
+    if (!empty && decl && decl.scoring && decl.scoring.rule === 'highestBid') {
+      const bid = Math.floor(Number(value));
+      if (!isFinite(bid) || bid < 0) return { ok: false, error: 'Ставка — целое число баллов' };
+      const owner = findOwner(ownerId);
+      const has = Math.floor(Number(owner && owner.score) || 0);
+      if (bid > has && player) {
+        return { ok: false, error: has ? `У семьи только ${has} ${plural(has, 'балл', 'балла', 'баллов')}` : 'У семьи пока нет баллов на ставку' };
+      }
+      value = Math.min(bid, has);
+    }
+
+    const round = roundAt(roundKey(contest, item), true);
 
     // Ведущий вводит ответ за всю семью с пульта — и его слово последнее:
     // он смотрит в зал, а телефоны отвечают каждый за себя.
@@ -917,7 +1001,7 @@ const handlers = {
       return ['runtime'];
     }
 
-    slot.v = familyVote(slot.by, voteDecl(contest).family || FAMILY_BY_KIND[voteDecl(contest).kind] || 'last');
+    slot.v = familyVote(slot.by, familyRule(contest));
     slot.at = Date.now();
     round.votes[ownerId] = slot;
     return ['runtime'];
@@ -1115,6 +1199,57 @@ const handlers = {
     return ['runtime'];
   },
 
+  // ——— колесо участника и судейство ———
+
+  // Крутить колесо заново. refused — выпавший отказался: больше его в этом
+  // задании не зовём. Балл, если его уже поставили, снимается.
+  roundRedraw({ refused }) {
+    const contest = currentContest();
+    const item = currentItem();
+    if (!contest || !item) return [];
+    const round = roundAt(roundKey(contest, item), true);
+    const slice = round.slice || (round.slice = {});
+    const skip = Array.isArray(slice.refused) ? slice.refused.slice() : [];
+    if (refused && slice.who && !skip.includes(slice.who)) skip.push(slice.who);
+    const undone = unjudge(slice);
+    slice.refused = skip;
+    if (!drawFor(contest, round, skip)) {
+      slice.who = '';
+      slice.result = '';
+      return { ok: false, error: skip.length ? 'Больше некого позвать — все отказались' : 'Нет играющих гостей — отметь их в кабинете' };
+    }
+    return ['runtime'].concat(undone);
+  },
+
+  // Ведущий судит: справился — балл семье артиста, не справился — ничего.
+  // Передумал — прежнее начисление снимается, дважды балл не придёт.
+  roundJudge({ result }) {
+    const contest = currentContest();
+    const item = currentItem();
+    const round = roundAt(roundKey(contest, item), false);
+    const slice = round && round.slice;
+    if (!slice || !slice.who) return { ok: false, error: 'Сначала колесо должно выбрать артиста' };
+    const want = ['pass', 'fail'].includes(result) ? result : '';
+    if (slice.result === want) return [];
+    const changed = unjudge(slice);
+    slice.result = want;
+    const r = store.runtime;
+    if (want === 'pass') {
+      const guest = store.guests.list.find((g) => g.id === slice.who);
+      const ownerId = guestOwnerId(guest);
+      if (!findOwner(ownerId)) {
+        slice.result = '';
+        return { ok: false, error: 'Гость не в семье — начисли балл вручную' };
+      }
+      const done = applyAward([{ id: ownerId, delta: pointsFor(contest) }], contest.title, roundKey(contest, item));
+      if (done.length) slice.awardSeq = r.lastAward.seq;
+      r.fx = { type: 'confetti', seq: (r.fx && r.fx.seq ? r.fx.seq : 0) + 1 };
+      return ['runtime', 'guests'];
+    }
+    if (want === 'fail') r.fx = { type: 'trombone', seq: (r.fx && r.fx.seq ? r.fx.seq : 0) + 1 };
+    return ['runtime'].concat(changed);
+  },
+
   // ——— жужжалка ———
 
   // Дать сигнал: с этой секунды нажатия считаются.
@@ -1282,10 +1417,23 @@ const handlers = {
     return ['play'];
   },
 
-  leave({ playerId }) {
-    if (!store.play.players[playerId]) return [];
+  // forget — гость промахнулся карточкой и сменил семью. Его ответ на текущий
+  // вопрос снимаем, пока ответ не раскрыт: случайный голос не должен остаться
+  // за чужой семьёй. Просто закрытая вкладка (без forget) ответы не трогает.
+  leave({ playerId, forget }) {
+    const player = store.play.players[playerId];
+    if (!player) return [];
     delete store.play.players[playerId];
-    return ['play'];
+    if (!forget) return ['play'];
+
+    const contest = currentContest();
+    const round = roundAt(roundKey(contest, currentItem()), false);
+    const slot = round && !round.awarded && store.runtime.phase !== 'reveal' && round.votes[player.ownerId];
+    if (!slot || !slot.by || !slot.by[playerId]) return ['play'];
+    delete slot.by[playerId];
+    if (!Object.keys(slot.by).length) delete round.votes[player.ownerId];
+    else slot.v = familyVote(slot.by, familyRule(contest));
+    return ['play', 'runtime'];
   },
 
   // Ведущий может отвязать чужой телефон из кабинета.
@@ -1335,8 +1483,9 @@ const handlers = {
   // По одному на семью за весь вечер. «50 на 50» убирает два неверных варианта
   // и только у той семьи, которая его потратила: какие именно — решает сервер,
   // поэтому подсмотреть правильный ответ в отладчике по-прежнему нельзя.
-  // «Помощь зала» показывает на телевизоре, как разошлись голоса, — не раскрывая,
-  // где правда.
+  // «Помощь зала» тоже только своя: как разошлись голоса, видят телефоны этой
+  // семьи, а телевизор лишь объявляет, что джокер взят. Иначе подсказку,
+  // за которую заплатила одна семья, бесплатно получали бы все.
   joker({ ownerId, kind }) {
     const r = store.runtime;
     if (r.screen !== 'show' || r.phase !== 'question' || rollingNow()) {
@@ -1370,7 +1519,8 @@ const handlers = {
       if (!round.fifty) round.fifty = {};
       round.fifty[owner.id] = wrong.slice(0, 2).sort((a, b) => a - b);
     } else if (kind === 'audience') {
-      round.audience = true;
+      if (!round.audience || typeof round.audience !== 'object') round.audience = {};
+      round.audience[owner.id] = Date.now();
     } else {
       return [];
     }
@@ -1405,7 +1555,7 @@ const handlers = {
 };
 
 function applyCommand(type, payload) {
-  if (store.runtime.intermission?.open && /^(next|prev|reveal|goto|goScreen|goContest|goItem|timer.*|vote|buzz.*|armBuzz|partyDraw|album|cake.*|planLaunch|directorCue|capsuleStage|setSlice|sliceAdd|roll)$/.test(type)) return { ok: false, error: 'Сначала завершите антракт' };
+  if (store.runtime.intermission?.open && /^(next|prev|reveal|goto|goScreen|goContest|goItem|timer.*|vote|buzz.*|armBuzz|partyDraw|album|cake.*|planLaunch|directorCue|setSlice|sliceAdd|roll|roundRedraw|roundJudge)$/.test(type)) return { ok: false, error: 'Сначала завершите антракт' };
   const fn = handlers[type];
   if (!fn) return { ok: false, error: 'Неизвестная команда: ' + type };
   const changed = fn(payload || {}) || [];

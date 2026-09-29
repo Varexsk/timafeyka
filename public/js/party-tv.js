@@ -1,5 +1,5 @@
 import { serverNow, send } from './bus.js';
-import { esc } from './util.js';
+import { esc, circusFrameHtml } from './util.js';
 import * as sfx from './sfx.js';
 import * as music from './music.js';
 import { paintDirector, updateDirectorTV } from './director-tv.js';
@@ -55,11 +55,51 @@ function wheelMarkup(list) {
   const scale = n > 16 ? .82 : n > 12 ? .9 : 1;
   return `<div class="party-wheel-box"><div class="party-pointer">▼</div><div class="party-wheel" style="background:conic-gradient(${sectors});--label-scale:${scale}">${list.map((g, i) => `<span style="--angle:${(i + .5) * 360 / n}deg"><b>${esc(wheelName(g.name))}</b></span>`).join('')}<i>★</i></div></div>`;
 }
+// Фотоальбом крутится фоном, пока гости едят и болтают: смотрят на него
+// издалека и мельком. Поэтому на экране только снимок во весь экран и
+// цирковая рамка с лампочками — ни счётчика «3 / 40», ни дежурных надписей.
+// Подпись появляется, только если её вписали к кадру.
+//
+// Рамка собирается один раз и не мигает при смене кадра. Кадры лежат слоями:
+// новый проявляется поверх старого, старый убирается, когда его уже не видно.
+// Размытая копия того же снимка заполняет поля по бокам вертикальных фото.
+function paintAlbumFrame(f, a, index) {
+  const id = `${index}/${f.src}/${f.caption}`;
+  if (!overlay.classList.contains('party-album') || !overlay.querySelector('.album-stage')) {
+    delete overlay.dataset.frame;
+    overlay.className = 'party-overlay party-album';
+    overlay.innerHTML = '<div class="album-stage"></div>'
+      + circusFrameHtml()
+      + '<div class="album-caption" hidden></div>';
+  }
+  // Пауза и перезапуск меняют seq, но не кадр — перерисовывать нечего.
+  if (overlay.dataset.frame === id) return;
+  overlay.dataset.frame = id;
+
+  const stage = overlay.querySelector('.album-stage');
+  stage.querySelectorAll('.album-layer:not(.is-leaving)').forEach((old) => {
+    old.classList.add('is-leaving');
+    setTimeout(() => old.remove(), 1600);
+  });
+  const layer = document.createElement('div');
+  layer.className = 'album-layer';
+  layer.style.setProperty('--photo-time', a.seconds + 's');
+  layer.innerHTML = `<img class="album-fill" src="${esc(f.src)}" alt=""><img class="album-photo" src="${esc(f.src)}" alt="${esc(f.caption || 'Фотография Тимофея')}">`;
+  stage.append(layer);
+
+  const caption = overlay.querySelector('.album-caption');
+  const text = (f.caption || '').trim();
+  caption.hidden = !text;
+  caption.textContent = text;
+}
+
 function paint() {
   if (!overlay) return;
   if (paintDirector(fullState, overlay)) { wheelKey = frameKey = ''; syncAudio(); return; }
   const w = runtime.partyDraw, a = runtime.album;
-  const drawing = !!w?.open, showing = !!a?.open;
+  // Колесо, которое запустил сам номер (фанты), уходит с экрана через пару
+  // секунд после остановки — дальше смотрят на задание с именем артиста.
+  const drawing = !!w?.open && !(w.closeAt && serverNow() > w.closeAt), showing = !!a?.open;
   if ((drawing || showing) && !wasOverlay) document.querySelectorAll('video, audio').forEach(m => m.pause());
   wasOverlay = drawing || showing;
   overlay.hidden = !drawing && !showing;
@@ -100,10 +140,8 @@ function paint() {
     const index = a.loop ? (a.index + advance) % a.frames.length : Math.min(a.index + advance, a.frames.length - 1);
     const f = a.frames[index], key = `${a.seq}/${index}`;
     if (frameKey !== key) {
-      const same = overlay.dataset.frame === `${index}/${f.src}/${f.caption}` && !!overlay.querySelector('img');
-      overlay.dataset.frame = `${index}/${f.src}/${f.caption}`;
-      frameKey = key; overlay.className = 'party-overlay party-album';
-      if (!same) overlay.innerHTML = `<div class="party-photo-halo"></div><img src="${esc(f.src)}" alt="${esc(f.caption || 'Фотография Тимофея')}" style="--photo-time:${a.seconds}s"><div class="party-photo-caption"><small>ТИМОФЕЙ · НАШ ПЕРВЫЙ ГОД</small><h1>${esc(f.caption || 'Маленькие моменты большого счастья')}</h1><span>${index + 1} / ${a.frames.length}</span></div>`;
+      frameKey = key;
+      paintAlbumFrame(f, a, index);
       overlay.classList.toggle('is-paused', !a.playing);
     }
   } else { wheelKey = frameKey = ''; overlay.innerHTML = ''; }

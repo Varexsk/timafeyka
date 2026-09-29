@@ -7,14 +7,14 @@ const media = v => typeof v === 'string' && /^\/?media\//.test(v) && !v.includes
 function motion(kind) { const r = store.runtime; r.lionAct = { kind, at: Date.now(), seq: (r.lionAct?.seq || 0) + 1 }; }
 function fx(type) { const r = store.runtime; r.fx = { type, seq: (r.fx?.seq || 0) + 1 }; }
 function closeOverlays() {
-  for (const key of ['album', 'partyDraw', 'ceremony', 'capsuleStage', 'albumStage']) if (store.runtime[key]) store.runtime[key].open = false;
+  for (const key of ['album', 'partyDraw', 'ceremony', 'albumStage']) if (store.runtime[key]) store.runtime[key].open = false;
 }
 function breakToggle(on) {
   const r = store.runtime;
   if (on === !!r.intermission?.open) return [];
   if (on) {
     const now = Date.now();
-    const saved = clone({ timer: r.timer, dj: r.dj, music: r.music, album: r.album, partyDraw: r.partyDraw, ceremony: r.ceremony, capsuleStage: r.capsuleStage });
+    const saved = clone({ timer: r.timer, dj: r.dj, music: r.music, album: r.album, partyDraw: r.partyDraw, ceremony: r.ceremony });
     if (saved.dj?.playing) saved.dj.position = (saved.dj.position || 0) + (now - saved.dj.startedAt) / 1000;
     if (r.timer?.running) { r.timer.leftPaused = Math.max(0, r.timer.endsAt - now); r.timer.running = false; }
     if (r.dj) { r.dj.playing = false; r.dj.seq++; }
@@ -30,7 +30,7 @@ function breakToggle(on) {
       r.timer = saved.timer;
       if (r.timer.running) r.timer.endsAt += elapsed;
     }
-    for (const key of ['album', 'partyDraw', 'ceremony', 'capsuleStage']) {
+    for (const key of ['album', 'partyDraw', 'ceremony']) {
       const oldSeq = r[key]?.seq || 0;
       r[key] = saved[key] || null;
       if (r[key]) {
@@ -47,7 +47,6 @@ function breakToggle(on) {
   return ['runtime'];
 }
 module.exports = {
-  capsuleStage({ open }) { closeOverlays(); store.runtime.capsuleStage = { open: !!open }; return ['runtime']; },
   albumStage({ open }) { closeOverlays(); store.runtime.albumStage = { open: !!open }; return ['runtime']; },
   intermission({ on }) { return breakToggle(!!on); },
   directorSettings(p) {
@@ -107,19 +106,5 @@ module.exports = {
     Object.assign(store.runtime, { screen: 'show', contestId: c.id, itemId: c.items?.[0]?.id || '', phase: 'intro', timer: null });
     closeOverlays(); motion('enter');
     return ['show', 'runtime'];
-  },
-  capsuleOpen({ open }) {
-    const capsule = store.show.capsule || (store.show.capsule = { open: false, letters: [] });
-    capsule.open = !!open; return ['show'];
-  },
-  capsuleLetter({ id, name, wish, prediction }) {
-    const c = store.show.capsule;
-    if (!c?.open) return { ok: false, error: 'Сбор писем пока закрыт' };
-    if (!text(name, 80) || !text(wish, 2000) || !/^[a-zA-Z0-9-]{8,80}$/.test(String(id || ''))) return { ok: false, error: 'Укажите имя и пожелание' };
-    c.letters ||= [];
-    if (c.letters.some(l => l.id === id)) return [];
-    if (c.letters.length >= 500) return { ok: false, error: 'Альбом заполнен' };
-    c.letters.push({ id, name: text(name, 80), wish: text(wish, 2000), prediction: text(prediction, 1000), at: Date.now() });
-    return ['show'];
   }
 };

@@ -432,3 +432,7 @@ body.admin textarea { resize: vertical; }
   font: 14px/1.6 ui-monospace, "Cascadia Mono", Consolas, monospace;
   white-space: pre-wrap;
 }
+
+/* Ролик, у которого браузер не видит картинку (HEVC с iPhone). */
+.vid-nopic { margin-top: .4rem; padding: .6rem .8rem; border-radius: .6rem; background: #fde8e6; color: #8c1d18; font-size: .85rem; line-height: 1.4; }
+.vid-nopic[hidden] { display: none; }

@@ -73,6 +73,13 @@ export function mediaHtml(path, hint) {
   return `<div class="media-frame"><img src="${esc(path)}" alt=""></div>`;
 }
 
+// Цирковая рамка фотоальбома: полосатый кант, лампочки на бархате, звёзды
+// по углам. Общая для альбома с пульта и номера «Год за минуту».
+export function circusFrameHtml() {
+  return '<div class="album-frame" aria-hidden="true"><i class="album-stripes"></i><i class="album-rim"></i><i class="album-bulbs"></i>'
+    + '<b class="album-star is-tl">★</b><b class="album-star is-tr">★</b><b class="album-star is-bl">★</b><b class="album-star is-br">★</b></div>';
+}
+
 export function answerHtml(item, options) {
   const has = Number.isInteger(item.answer) && options && options.length;
   if (has) return '';

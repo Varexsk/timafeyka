@@ -36,6 +36,9 @@ function declare(id, file, mod) {
     participation: mod.participation || {},
     timer: mod.timer || null,
     revealAfterVideo: !!mod.revealAfterVideo,
+    // Колесо участника при открытии задания: { linger } — сколько держать
+    // колесо на экране после остановки, чтобы все прочитали имя.
+    draw: mod.draw || null,
     hasServer: false
   };
 }

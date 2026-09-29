@@ -7,6 +7,7 @@
     "start": "node server/server.js",
     "dev": "node server/server.js",
     "audio": "node tools/fetch-audio.mjs",
+    "video": "node tools/convert-video.mjs",
     "test": "node --test",
     "smoke": "node tools/smoke.mjs"
   },

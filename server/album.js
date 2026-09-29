@@ -70,7 +70,6 @@ const STYLE = `
 function albumHtml() {
   const show = store.show;
   const hero = show.hero || 'Тимофей';
-  const letters = (show.capsule && show.capsule.letters) || [];
   const honors = show.honors || [];
   const booth = show.booth || [];
   const stats = store.runtime.stats || { questions: [] };
@@ -87,7 +86,7 @@ function albumHtml() {
 <header>
   <small class="kicker">${esc(show.title || 'Цирк Тимоши')} · первый день рождения</small>
   <h1>Наш праздник</h1>
-  <p>Письма, фотографии и звёздочки вечера</p>
+  <p>Фотографии и звёздочки вечера</p>
 </header>
 
 ${table.length ? `<section>
@@ -110,22 +109,12 @@ ${booth.length ? `<section>
   </div>
 </section>` : ''}
 
-${letters.length ? `<section>
-  <h2>Письма ${esc(hero)} в будущее</h2>
-  ${letters.map((l) => `<article>
-    <small class="kicker">Письмо от</small>
-    <h2>${esc(l.name)}</h2>
-    <p>${esc(l.wish)}</p>
-    ${l.prediction ? `<h3>Моё предсказание</h3><p>${esc(l.prediction)}</p>` : ''}
-  </article>`).join('')}
-</section>` : ''}
-
 ${honors.length ? `<section>
   <h2>Наши звёзды арены</h2>
   ${honors.map((a) => `<article><small class="kicker">${esc(a.title)}</small><h2>${esc(a.name)}</h2></article>`).join('')}
 </section>` : ''}
 
-${letters.length || booth.length || honors.length || table.length ? '' : '<section><p class="note">Праздник ещё не сыгран — альбом наполнится по ходу вечера.</p></section>'}
+${booth.length || honors.length || table.length ? '' : '<section><p class="note">Праздник ещё не сыгран — альбом наполнится по ходу вечера.</p></section>'}
 
 <p class="note">Чтобы сохранить альбом насовсем — напечатай эту страницу в PDF (Ctrl+P).</p>
 </html>`;

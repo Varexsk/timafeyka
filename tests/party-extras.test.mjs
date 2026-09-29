@@ -152,6 +152,10 @@ test('«помощь зала» показывает расклад голосо
   const view = playRuntime(store.runtime, a.id, store.show);
   assert.deepEqual(view.round.audience, { 0: 2, 1: 1 }, 'голоса считаются по людям');
   assert.equal(view.correct, undefined, 'правильный ответ по-прежнему не уходит на телефон');
+
+  const theirs = playRuntime(store.runtime, b.id, store.show);
+  assert.equal(theirs.round.audience, undefined, 'чужая «помощь зала» соседям не видна');
+  assert.equal(playRuntime(store.runtime, '', store.show).round.audience, undefined);
 });
 
 test('джокер не работает вне вопроса', () => {
